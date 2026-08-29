@@ -1,6 +1,6 @@
 # Architecture
 
-**Live:** https://sim-timetable.vercel.app · **Repo:** https://github.com/Cetus024/sim-timetable
+**Live:** https://simtimetable.vercel.app · **Repo:** https://github.com/Shisa2025/simtimetable
 
 For *why* it is shaped this way, see [docs/PRD.md](docs/PRD.md).
 For implementation depth — data contracts, algorithms, failure modes — see
@@ -32,7 +32,7 @@ flowchart LR
     end
 
     subgraph browser["🧑 The reader's browser"]
-        VIEW["viewer.html<br/><i>table + availability</i>"]
+        VIEW["index.html<br/><i>student room finder</i>"]
         LS[("localStorage")]
         EXP["timetable.html<br/><i>self-contained export</i>"]
     end
@@ -73,7 +73,7 @@ Chromium engine. That is the single reason this project launches a browser to pe
 otherwise one GET.
 
 There is a third, softer constraint: the API sends no `Access-Control-Allow-Origin`, so it is
-same-origin only. The viewer cannot call it directly from `sim-timetable.vercel.app` — hence the
+same-origin only. The room finder cannot call it directly from `simtimetable.vercel.app` — hence the
 published-file feed, and hence the bookmarklet running *on* the scheduling page.
 
 ## Why the API instead of the table
@@ -101,8 +101,8 @@ That last row is the important one. The table can only show rooms that are busy,
 | `scripts/lib/cdp.mjs` | CI, or locally | Dependency-free CDP client — launch, open, evaluate |
 | `.github/workflows/daily-schedule.yml` | GitHub Actions | 00:05 SGT cron; runs the fetch and commits the result |
 | `data/latest.json` | the repo | The published feed |
-| `viewer.html` | Vercel → browser | Load the feed, import, persist, export |
-| `assets/timetable.js` | browser | **All** rendering. Pure, no I/O |
+| `index.html`, `assets/app.js` | Vercel → browser | Load the feed, import, persist, export, and hand off data |
+| `assets/timetable.js` | browser | **All** Singapore-time filtering and rendering. Pure, no I/O |
 | `scripts/serve.mjs`, `scripts/test-handoff.mjs` | local dev | Static server; end-to-end handoff test |
 
 ## Three structural decisions
@@ -117,7 +117,7 @@ the drift would be silent.
 this exact file and call the same `mount()`, so the exported page and the live viewer cannot
 diverge.
 
-**3. The landing page never hardcodes the scraper source.** It fetches `/scraper/scrape.js` at
+**3. The advanced tools page never hardcodes the scraper source.** It fetches `/scraper/scrape.js` at
 runtime and uses that one string for both the visible code block and the bookmarklet's
 `javascript:` URL — so what you read, what you copy, and what the bookmarklet runs are the same
 bytes.
@@ -133,14 +133,14 @@ payload      { version: 2, rooms[], rows[], schedule_dates[], scraped_at }
      │           which is NOT the same as open to students)
      │  rows[]  carries every booking; a "Free Access" event means students may use it
      ▼
-viewer       fetch feed → coerce() → SIMTimetable.mount(rows, {rooms})
+room finder  fetch feed → coerce() → SIMTimetable.mount(rows, {rooms})
      ▼
-             filter → { table view | OPEN/BUSY/GAP timeline + open-to-students card }
+             filter → { open now | daily OPEN/BUSY/UNKNOWN timeline | full schedule }
 ```
 
 `start_min` / `end_min` drive every comparison; the `"4:00 PM"` strings are display only.
 Booking status is **not** trusted from the payload — a status written at 00:05 would still claim
-`UPCOMING` at 3pm — so the renderer recomputes it from the reader's clock.
+`UPCOMING` at 3pm — so the renderer recomputes it in the `Asia/Singapore` time zone.
 
 ## Deployment
 
@@ -149,5 +149,5 @@ Two independent pipelines, which is deliberate:
 - **Data** — GitHub Actions → `data/latest.json` → read by the viewer over
   `raw.githubusercontent.com`. Needs no deploy, so the schedule refreshes without touching the
   site.
-- **Site** — `vercel deploy --prod --yes`, run by hand. The Vercel project is **not** connected
-  to GitHub, so `git push` does not deploy.
+- **Site** — Vercel is connected to the GitHub repository. A push to `main` creates the
+  production deployment automatically.

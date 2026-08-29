@@ -1,166 +1,108 @@
 # SIM Campus Timetable
 
-The SIM campus schedule, made useful — filter by block, floor and room, or flip to
-**availability** mode to see which rooms SIM has actually opened to students today.
+An independent student tool for finding SIM campus rooms that are explicitly marked
+**Free Access**. It answers what is open now, what opens later today, and provides the full
+published schedule without claiming that unallocated rooms are available.
 
 | | |
 | --- | --- |
-| **Live site** | https://sim-timetable.vercel.app |
-| **Viewer** | https://sim-timetable.vercel.app/viewer |
-| **Repo** | https://github.com/Cetus024/sim-timetable |
-| **Vercel project** | https://vercel.com/cetus024s-projects/sim-timetable |
+| **Live site** | https://simtimetable.vercel.app |
+| **Repository** | https://github.com/Shisa2025/simtimetable |
+| **Official data source** | https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM |
 
-**Docs:** [PRD](docs/PRD.md) (problem, scope, user stories) ·
-[Architecture](ARCHITECTURE.md) (diagram, components, constraints) ·
-[Technical design](docs/TECHNICAL-DESIGN.md) (contracts, algorithms, failure modes)
+This project is not affiliated with, operated by, or endorsed by Singapore Institute of
+Management (SIM).
 
-## Using it
+## Student experience
 
-Open [the viewer](https://sim-timetable.vercel.app/viewer). That's it — it refreshes itself
-daily and already has today's schedule.
+- **Open now** — confirmed Free Access rooms, sorted by how long they remain open.
+- **Opening later** — the next confirmed window for matching rooms.
+- **Today's availability** — each Free Access room with its open, busy, and unknown timeline.
+- **Full schedule** — every published booking, with live status calculated in Singapore time.
+- Filters for block, floor, room, capacity, and required duration.
+- Light, dark, and system themes; responsive cards for mobile screens.
 
-Want the very latest state mid-day rather than last night's snapshot? Drag the bookmarklet from
-the [home page](https://sim-timetable.vercel.app) to your bookmarks bar, then click it while on
-[the scheduling page](https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM). It opens the viewer
-and hands today's schedule over in about a second.
+The site never treats a room with no booking as open. SIM often locks unallocated labs,
+tutor rooms, and other spaces, so those periods are labelled **Unknown / may be locked**.
 
-**Export standalone HTML** in the viewer gives you a single self-contained file that works
-offline and outlives this site.
+## Routes
 
-## Views
+| Route | Purpose |
+| --- | --- |
+| `/` | Student room finder |
+| `/viewer` | Backwards-compatible redirect to the room finder |
+| `/advanced` | Bookmarklet, scraper, and JSON import tools |
+| `/about` | Data source, definitions, and limitations |
+| `/privacy` | Local storage, hosting, and advertising disclosures |
+| `/ads.txt` | AdSense authorised seller declaration |
 
-- **Table** — every booking, sorted by end time, with block/floor/room broken out. Status is
-  computed from your clock, so it says what is busy *now*.
-- **Availability** — each room as a timeline of OPEN (Free Access), BUSY (booked) and GAP
-  (nothing booked, may still be locked) segments. "Open after" / "Open before" narrow to rooms
-  whose Free Access window starts in that range.
-- **Open to students** — the rooms SIM has explicitly marked **Free Access** today, with their
-  windows. This is the actionable list: roughly 38 rooms.
+## Data flow
 
-Note what is *not* claimed. A room with nothing booked is **not** listed as available: unbooked
-means unallocated, and most such rooms (25 labs, plus tutor rooms and foyers) are simply locked.
-They appear only as a count, with an explanation. Gaps between bookings show as **GAP**, not
-FREE, for the same reason.
+SIM's public scheduling page exposes its campus data through:
 
-## Where the data comes from
-
-SIM's scheduling page is a front end over its own API:
-
-```
+```text
 GET https://scheduling.sim.edu.sg/rad/rest/campus?id=SIM
     → buildings[] → rooms[] → activities[]
 ```
 
-Reading that directly beats scraping the rendered table on every axis — one request instead of
-54 pages, exact timestamps instead of parsed strings, room capacities, and the full room
-inventory rather than only the rooms that happen to be busy.
+The endpoint is same-origin and protected by a WAF that rejects ordinary HTTP clients. The
+shared scraper therefore runs in a real Chromium browser. GitHub Actions runs it shortly after
+midnight Singapore time and commits `data/latest.json`. The website reads the published file
+from `Shisa2025/simtimetable` and keeps the last successful snapshot in browser local storage as
+an offline fallback.
 
-No login is involved; the schedule is public. Two quirks shape everything else:
-
-- **The site's WAF answers `464` to non-browser clients.** `curl` is refused even for the HTML
-  page, with or without browser-like headers — it fingerprints the client. So every read runs
-  through a real Chromium engine.
-- **The API sends no CORS header**, so it is same-origin only. The viewer can't call it directly;
-  that is why the data arrives as a published file, and why the bookmarklet runs *on* the
-  scheduling page.
-
-### Daily refresh
-
-[`.github/workflows/daily-schedule.yml`](.github/workflows/daily-schedule.yml) runs at 00:05 SGT
-(`05 16 * * *` UTC), reads the API in headless Chrome, and commits `data/latest.json`. The viewer
-fetches that from `raw.githubusercontent.com` on load and uses it when it is fresher than what
-you already have.
-
-GitHub's cron is best-effort, so treat 00:05 as "shortly after midnight". Run it by hand any time
-from the repo's Actions tab, or:
-
-```bash
-gh workflow run daily-schedule.yml
-```
-
-A failed run never publishes: the fetch refuses a payload with zero rooms or zero bookings and
-exits non-zero, leaving the previous day's file in place. The viewer always shows the data's age,
-so staleness is visible rather than silent.
-
-### JSON shape
-
-```json
-{
-  "version": 2,
-  "source": "https://scheduling.sim.edu.sg/rad/rest/campus?id=SIM",
-  "campus": "SIM Campus",
-  "scraped_at": "2026-08-24T00:05:00.000Z",
-  "schedule_dates": ["2026-08-24"],
-  "auto": true,
-  "rooms": [
-    { "room": "TR.3", "description": "Tutor Room 3", "building": "SIM Campus Block A",
-      "block": "A", "floor": null, "activities": 0 }
-  ],
-  "rows": [
-    { "start": "8:30 AM", "end": "11:30 AM", "start_min": 510, "end_min": 690,
-      "block": "A", "floor": 1, "room": "LT.A.1.08",
-      "event": "COMM3001 - LF01 : Digi Audiences and Analytics - RMIT",
-      "status": "UPCOMING", "description": "…", "room_description": "A.1.08 (112pax)" }
-  ]
-}
-```
-
-`activities: 0` marks a room with nothing booked — which is *not* the same as open; see Views
-above. Rooms open to students are identified by rows whose `event` matches `Free Access`. The
-viewer also accepts a bare array of rows, or older payloads without `rooms`.
-
-## Layout
-
-```
-index.html                  landing page — the bookmarklet, and what this is
-viewer.html                 loads the feed, imports, persists, exports
-assets/timetable.js         parsing + rendering, shared by the viewer and the export
-assets/styles.css           shared styles (light + dark)
-scraper/scrape.js           the ONLY read-and-transform: bookmarklet and CI both run this
-scripts/fetch-schedule.mjs  evaluates scrape.js headless; writes data/latest.json
-scripts/lib/cdp.mjs         dependency-free Chrome DevTools Protocol client
-scripts/serve.mjs           local static server mirroring vercel.json's clean URLs
-scripts/test-handoff.mjs    end-to-end test of the bookmarklet handoff
-sample/                     sample data, so the site demos without a live fetch
-data/latest.json            published daily; read by the viewer
-.github/workflows/          the daily job
-```
+The bookmarklet on `/advanced` can obtain a newer mid-day snapshot. It opens the room finder,
+passes the data directly between the two browser tabs using `postMessage`, and requires an
+acknowledgement from the tab it opened. If that handoff fails, it downloads JSON instead.
 
 ## Developing
 
-No dependencies and no build step.
+There are no dependencies and no build step.
 
 ```bash
 node scripts/serve.mjs
 ```
 
-Then open http://localhost:4173 — the server mirrors Vercel's clean-URL resolution, so `/viewer`
-behaves as it does in production.
+Open http://localhost:4173. The local server mirrors Vercel's clean URLs.
 
-Fetch the schedule locally (needs Chrome or Edge; override with `BROWSER_PATH`):
+Fetch the latest schedule locally (requires Chrome or Edge):
 
 ```bash
 node scripts/fetch-schedule.mjs
 ```
 
-The one path worth an automated test is the cross-tab handoff, since it needs a real popup and a
-real user gesture:
+Run the browser-based checks with the local server running:
 
 ```bash
+node scripts/test-ui.mjs
 node scripts/test-handoff.mjs
 ```
 
-It drives headless Edge over CDP and checks both that the viewer accepts a payload from the tab
-that opened it, and that it ignores one from anything else.
+## Daily publishing and deployment
 
-## Deploying
+`.github/workflows/daily-schedule.yml` runs at `00:05 SGT` (`16:05 UTC`) and can also be run
+manually from the Actions tab. It refuses empty room or booking payloads before replacing the
+last good snapshot.
 
-Static — no build step.
+The Vercel project is connected to the repository's `main` branch, so pushes to `main` deploy
+automatically. Confirm that GitHub Actions has **Read and write permissions** and run the daily
+workflow manually once after setting up a new repository.
 
-```bash
-vercel deploy --prod --yes
+## Project layout
+
+```text
+index.html                  student room finder
+advanced.html               refresh and import tools
+about.html / privacy.html   trust and privacy content
+assets/app.js               feed, cache, import, export, and handoff orchestration
+assets/timetable.js         parsing, Singapore-time logic, filters, and rendering
+assets/styles.css           responsive light/dark visual system
+scraper/scrape.js           shared browser scraper used by bookmarklet and CI
+scripts/fetch-schedule.mjs  headless daily fetch
+scripts/test-ui.mjs         deterministic room-finder checks
+scripts/test-handoff.mjs    cross-tab security and compatibility checks
+data/latest.json            latest published schedule
 ```
 
-> The Vercel project is **not** connected to GitHub, so `git push` does not deploy the site.
-> Data is separate: the daily job publishes `data/latest.json` to the repo, and the viewer reads
-> it from there, so a schedule refresh needs no deploy at all.
+Further design details are in [ARCHITECTURE.md](ARCHITECTURE.md) and
+[docs/TECHNICAL-DESIGN.md](docs/TECHNICAL-DESIGN.md).

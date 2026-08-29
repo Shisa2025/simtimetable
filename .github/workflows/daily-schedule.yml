@@ -54,8 +54,8 @@ jobs:
         run: |
           node -e "
             const p = require('./data/latest.json');
-            const free = p.rooms.filter(r => r.activities === 0).length;
-            console.log(\`\${p.rows.length} bookings, \${p.rooms.length} rooms, \${free} free all day, for \${p.schedule_dates.join(', ')}\`);
+            const unbooked = p.rooms.filter(r => r.activities === 0).length;
+            console.log(\`\${p.rows.length} bookings, \${p.rooms.length} rooms, \${unbooked} unbooked (access unknown), for \${p.schedule_dates.join(', ')}\`);
           "
           git diff --stat -- data/latest.json || true
 

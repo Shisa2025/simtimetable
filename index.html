@@ -1,115 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-SG">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858"
-  crossorigin="anonymous"></script>
-<title>SIM Campus Timetable</title>
-<meta name="description" content="Scrape the SIM campus scheduling page and find free rooms." />
+<script>(function(){try{var t=localStorage.getItem('sim-timetable-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858" crossorigin="anonymous"></script>
+<title>SIM Campus Timetable — Find Free Access Rooms</title>
+<meta name="description" content="Find SIM campus rooms that are explicitly open to students now, see what opens later, and browse today's timetable." />
+<meta name="theme-color" content="#17324D" />
+<link rel="canonical" href="https://simtimetable.vercel.app/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="SIM Campus Timetable" />
+<meta property="og:description" content="Find SIM campus rooms that are explicitly open to students now." />
+<meta property="og:url" content="https://simtimetable.vercel.app/" />
+<meta property="og:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
+<meta property="og:image:width" content="1731" />
+<meta property="og:image:height" content="909" />
+<meta property="og:image:alt" content="SIM Campus Timetable — Find rooms you can actually use." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="SIM Campus Timetable" />
+<meta name="twitter:description" content="Find SIM campus rooms that are explicitly open to students now." />
+<meta name="twitter:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
 <link rel="stylesheet" href="/assets/styles.css" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%2317324d%22/><text x=%2250%22 y=%2263%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 font-weight=%22700%22 fill=%22white%22>ST</text></svg>" />
 </head>
 <body>
-<div class="wrap">
+<a class="skip-link" href="#main">Skip to room finder</a>
 
-  <h1>SIM Campus Timetable</h1>
-  <p class="meta">The campus schedule, but useful — filter by block, floor and room, or flip to availability mode to find rooms that are actually free. Updated automatically every day just after midnight.</p>
-
-  <div class="card">
-    <h2 style="margin-top:0">You probably don't need to do anything</h2>
-    <p>The <a href="/viewer">viewer</a> refreshes itself every day at about 00:05, so it already has today's schedule — including every room with nothing booked in it at all.</p>
-    <p class="note">Read it straight from SIM's own campus API, so it covers all 326 rooms rather than only the ones that happen to be busy.</p>
-
-    <h2>Want it right now instead?</h2>
-    <p>Use the bookmarklet below if you need the very latest state mid-day rather than last night's snapshot.</p>
-    <ol class="steps">
-      <li>Drag the bookmarklet to your bookmarks bar — once, ever.</li>
-      <li>Open <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">the scheduling page</a> and click it.</li>
-      <li>It opens the viewer and hands today's schedule over in about a second.</li>
-    </ol>
-    <p class="note">Prefer the console? Copy the script and paste it into DevTools (<code class="inline">F12</code>) on the scheduling page instead — same result. If the viewer tab gets popup-blocked, it falls back to downloading <code class="inline">sim-timetable.json</code> for you to drop into the <a href="/viewer">viewer</a>.</p>
-    <p class="note">It runs in your browser because SIM's API only answers requests from its own page. Nothing is uploaded anywhere — this site is static, and the data goes straight from the scheduling tab to your viewer tab.</p>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/" aria-label="SIM Campus Timetable home">
+      <span class="brand-mark" aria-hidden="true">ST</span>
+      <span class="brand-copy">
+        <strong>SIM Campus Timetable</strong>
+        <small>Independent student tool</small>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="/#open-now" data-view-link="now">Find rooms</a>
+      <a href="/#today" data-view-link="today">Today</a>
+      <a href="/#schedule" data-view-link="schedule">Full schedule</a>
+      <a href="/about">About</a>
+    </nav>
+    <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme.">
+      <span class="theme-toggle-icon" aria-hidden="true">◐</span>
+    </button>
   </div>
+</header>
 
-  <div class="card">
-    <h2 style="margin-top:0">The bookmarklet</h2>
-    <div class="row" style="margin-bottom:12px">
-      <button class="btn primary" id="copyBtn" type="button">Copy scraper to clipboard</button>
-      <a class="btn" href="/scraper/scrape.js" download="scrape.js">Download scrape.js</a>
-      <a class="btn" id="bookmarklet" href="#" title="Drag me to your bookmarks bar">↗ Scrape SIM Timetable (drag to bookmarks bar)</a>
-      <span class="note" id="copyStatus"></span>
+<main class="page-shell" id="main">
+  <section class="app-hero" aria-labelledby="pageTitle">
+    <div class="hero-copy">
+      <p class="eyebrow">Live campus room finder</p>
+      <h1 id="pageTitle">Find a room you can actually use.</h1>
+      <p>Only rooms explicitly marked <strong>Free Access</strong> by SIM are shown as open. Unallocated rooms may still be locked.</p>
     </div>
-    <pre class="snippet" id="snippet">Loading scraper source…</pre>
-    <p class="note">The bookmarklet is the same code, inlined — drag it to your bookmarks bar, then click it while you are on the scheduling page. It must run there: the campus API only answers same-origin requests.</p>
+    <div class="singapore-clock" aria-live="off">
+      <span>Singapore time</span>
+      <strong id="sgTime">—</strong>
+      <small id="sgDate">Loading date…</small>
+    </div>
+  </section>
+
+  <aside class="alert" id="staleBanner" role="alert" hidden>
+    <span aria-hidden="true">⚠</span>
+    <div><strong>Previous schedule</strong><p id="staleText">This snapshot is not for today in Singapore.</p></div>
+  </aside>
+
+  <section class="waiting-panel card" id="waitingPanel" aria-live="polite" hidden>
+    <div class="loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <div><h2 id="waitStep">Waiting for the fresh schedule</h2><p id="waitDetail">Keep this tab open while the SIM scheduling page sends the data.</p></div>
+      <button class="btn" id="waitingCancel" type="button">Load a file instead</button>
+    </div>
+  </section>
+
+  <section class="card" id="loadingPanel" aria-live="polite">
+    <div class="loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <div><h2>Getting today’s timetable</h2><p>Checking the latest published SIM schedule.</p></div>
+    </div>
+  </section>
+
+  <section class="import-panel card" id="importPanel" aria-labelledby="importHeading" hidden>
+    <p class="eyebrow">Fallback option</p>
+    <h2 id="importHeading">Load a saved schedule</h2>
+    <p class="note">Use this only when the daily snapshot is unavailable. Your file stays in this browser.</p>
+    <div class="drop" id="drop">
+      <strong>Drop sim-timetable.json here</strong><br />
+      <span class="note">or <button class="btn" id="pickBtn" type="button">Choose a file</button></span>
+      <input type="file" id="file" accept="application/json,.json" hidden />
+    </div>
+    <label for="pasteArea" class="note">Or paste schedule JSON:</label>
+    <textarea class="paste" id="pasteArea" placeholder="Paste JSON here"></textarea>
+    <div class="row">
+      <button class="btn primary" id="loadPasteBtn" type="button">Load schedule</button>
+      <button class="btn" id="cancelImportBtn" type="button">Cancel</button>
+      <span class="err" id="importError" role="alert"></span>
+    </div>
+  </section>
+
+  <section id="app" hidden>
+    <div class="status-strip" aria-label="Schedule summary">
+      <div class="status-card is-open"><span>Open now</span><strong id="openValue">—</strong><small>Confirmed Free Access</small></div>
+      <div class="status-card"><span>Opening later</span><strong id="laterValue">—</strong><small>Today in Singapore</small></div>
+      <div class="status-card"><span>Schedule date</span><strong id="dateValue">—</strong><small id="dateDetail">Loading…</small></div>
+    </div>
+    <div class="status-card" style="min-height:0;margin-bottom:16px">
+      <span>Latest data</span><strong id="updatedValue" style="font-size:18px">—</strong><small id="updatedDetail">Checking…</small>
+    </div>
+
+    <div id="timetable"></div>
+
+    <div class="app-actions">
+      <button class="btn" id="exportBtn" type="button">Download offline copy</button>
+      <button class="btn" id="showImportBtn" type="button">Load my own data</button>
+      <a class="btn" href="/advanced">Advanced refresh tools</a>
+      <span class="action-status" id="exportStatus" role="status"></span>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <p><strong>Independent student tool.</strong> Not affiliated with or endorsed by Singapore Institute of Management. Schedule data comes from SIM’s public scheduling service.</p>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
+      <a href="/about">About</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/advanced">Advanced tools</a>
+      <a href="https://github.com/Shisa2025/simtimetable/issues">Feedback</a>
+    </nav>
   </div>
+</footer>
 
-  <div class="card">
-    <h2 style="margin-top:0">Just show me the timetable</h2>
-    <p style="margin-bottom:12px">Today's schedule is already loaded.</p>
-    <a class="btn primary" href="/viewer">Open the viewer →</a>
-  </div>
-
-  <footer>
-    Static site — no backend, no accounts, no data leaves your browser.
-  </footer>
-
-</div>
-
-<script>
-(function () {
-  'use strict';
-
-  var snippetEl = document.getElementById('snippet');
-  var copyBtn = document.getElementById('copyBtn');
-  var statusEl = document.getElementById('copyStatus');
-  var bookmarkletEl = document.getElementById('bookmarklet');
-  var source = null;
-
-  function setStatus(msg, isError) {
-    statusEl.textContent = msg;
-    statusEl.className = isError ? 'err' : 'note';
-  }
-
-  fetch('/scraper/scrape.js')
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    })
-    .then(function (text) {
-      // Point the scraper's handoff at whatever origin is serving this page, so
-      // a local dev copy hands off to localhost rather than to production.
-      source = text.replace('__VIEWER_ORIGIN__', window.location.origin);
-      snippetEl.textContent = source;
-      // Bookmarklets are exempt from the page's CSP in current browsers, and inlining
-      // the whole thing means it needs no network access at click time.
-      bookmarkletEl.href = 'javascript:' + encodeURIComponent(source);
-    })
-    .catch(function (err) {
-      snippetEl.textContent = 'Could not load the scraper source (' + err.message + ').';
-      setStatus('Scraper source unavailable.', true);
-    });
-
-  copyBtn.addEventListener('click', function () {
-    if (!source) { setStatus('Still loading…', true); return; }
-    navigator.clipboard.writeText(source).then(function () {
-      setStatus('Copied — paste it into the DevTools console on the scheduling page.');
-    }, function () {
-      // Clipboard API needs a secure context; fall back to selecting the text.
-      var range = document.createRange();
-      range.selectNodeContents(snippetEl);
-      var sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      setStatus('Clipboard blocked — the code is selected, press Ctrl+C.', true);
-    });
-  });
-
-  bookmarkletEl.addEventListener('click', function (e) {
-    e.preventDefault();
-    setStatus('Drag this button to your bookmarks bar instead of clicking it here.');
-  });
-})();
-</script>
+<script src="/assets/toast.js"></script>
+<script src="/assets/timetable.js"></script>
+<script src="/assets/site.js"></script>
+<script src="/assets/app.js"></script>
 </body>
 </html>

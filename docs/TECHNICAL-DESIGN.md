@@ -39,7 +39,7 @@ being hidden — a missing field should be visible, not silently absent.
 
 ### 1.3 Accepted inputs
 
-`coerce()` in `viewer.html` accepts, in order of preference:
+`coerce()` in `assets/app.js` accepts, in order of preference:
 
 1. A full v1 payload.
 2. A **bare array** of rows (convenience for hand-edited data).
@@ -155,10 +155,9 @@ So the timeline has three segment kinds, not two:
 | `busy` | any other booking | **BUSY**, red |
 | `gap` | nothing booked | **GAP**, muted, labelled "may still be locked" |
 
-The availability view leads with the Free Access rooms and their windows. The unbooked rooms are
-reported as a count with an explanation, never as a list of places to go. The "Open after/before"
-filters match `open` segments only - the question is "when can I get in", not "when is nothing
-scheduled".
+The default view leads with Free Access rooms whose windows contain the current Singapore time,
+then shows the next confirmed windows later today. Duration and capacity filters apply only to
+confirmed `open` segments; unbooked rooms remain a count rather than a list of destinations.
 
 ### 4.1b Progress reporting
 
@@ -235,7 +234,7 @@ lands on the first or second pump.
 
 **Acceptance rules on the viewer side.** A message is only acted on when all of these hold:
 
-1. the viewer was opened as `/viewer?awaiting=1` **and** has a `window.opener`;
+1. the room finder was opened as `/?awaiting=1` **and** has a `window.opener`;
 2. `e.source === window.opener` — the sender is the tab that opened it;
 3. `e.data.type === 'sim-timetable:payload'`;
 4. the payload survives `coerce()`, the same validation every other import goes through.
@@ -276,7 +275,7 @@ runs in GitHub Actions; see §3.
 
 ## 7. Hosting
 
-`vercel.json` sets `cleanUrls: true` (so `/viewer` serves `viewer.html`), `trailingSlash: false`,
+`vercel.json` sets `cleanUrls: true` (so content routes omit `.html`), `trailingSlash: false`,
 an explicit `text/javascript` content type on `/scraper/scrape.js`, and `must-revalidate` on the
 scraper and assets — the scraper must never be served stale, since a cached copy could contain a
 known-broken selector.

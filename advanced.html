@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-SG">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>(function(){try{var t=localStorage.getItem('sim-timetable-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858" crossorigin="anonymous"></script>
+<title>Advanced Refresh Tools — SIM Campus Timetable</title>
+<meta name="description" content="Refresh or import SIM Campus Timetable data using the public SIM scheduling service." />
+<meta name="theme-color" content="#17324D" />
+<link rel="canonical" href="https://simtimetable.vercel.app/advanced" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Advanced Refresh Tools — SIM Campus Timetable" />
+<meta property="og:description" content="Refresh or import timetable data using the public SIM scheduling service." />
+<meta property="og:url" content="https://simtimetable.vercel.app/advanced" />
+<meta property="og:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
+<meta property="og:image:alt" content="SIM Campus Timetable — Find rooms you can actually use." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to advanced tools</a>
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/" aria-label="SIM Campus Timetable home">
+      <span class="brand-mark" aria-hidden="true">ST</span>
+      <span class="brand-copy"><strong>SIM Campus Timetable</strong><small>Independent student tool</small></span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="/#open-now">Find rooms</a><a href="/#today">Today</a><a href="/#schedule">Full schedule</a><a href="/about">About</a>
+    </nav>
+    <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme."><span class="theme-toggle-icon" aria-hidden="true">◐</span></button>
+  </div>
+</header>
+
+<main class="page-shell content-shell" id="main">
+  <section class="content-hero">
+    <p class="eyebrow">Advanced tools</p>
+    <h1>Refresh the timetable yourself.</h1>
+    <p>The main room finder updates automatically. Use these tools only when you need a newer snapshot during the day or want to load a saved schedule.</p>
+  </section>
+
+  <aside class="trust-note">
+    Everything below runs in your browser. Timetable JSON is passed directly between tabs or stored on this device; this site does not upload it to an application server.
+  </aside>
+
+  <section class="advanced-grid" aria-label="Refresh options" style="margin-top:18px">
+    <article class="card">
+      <p class="eyebrow">Fastest option</p>
+      <h2>Use the bookmarklet</h2>
+      <ol class="steps">
+        <li>Drag the button below to your bookmarks bar.</li>
+        <li>Open the <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">official SIM scheduling page</a>.</li>
+        <li>Click the saved bookmark. A fresh room finder opens automatically.</li>
+      </ol>
+      <a class="btn primary" id="bookmarklet" href="#" title="Drag this button to your bookmarks bar">↗ Refresh SIM timetable</a>
+      <p class="note" id="bookmarkletStatus" role="status" style="margin-top:10px">Preparing bookmarklet…</p>
+    </article>
+
+    <article class="card">
+      <p class="eyebrow">Saved data</p>
+      <h2>Import a JSON file</h2>
+      <p class="note">Load a previous <code class="inline">sim-timetable.json</code> file on this device.</p>
+      <input type="file" id="advancedFile" accept="application/json,.json" hidden />
+      <button class="btn" id="advancedPickBtn" type="button">Choose JSON file</button>
+      <details class="more-filters">
+        <summary>Paste JSON instead</summary>
+        <label for="advancedPaste"><span>Schedule JSON</span><textarea class="paste" id="advancedPaste" placeholder="Paste JSON here"></textarea></label>
+        <button class="btn" id="advancedLoadPasteBtn" type="button">Load pasted JSON</button>
+      </details>
+      <p class="err" id="advancedImportError" role="alert"></p>
+    </article>
+  </section>
+
+  <section class="content-card prose" style="margin-top:14px">
+    <h2>Console method</h2>
+    <p>If bookmarklets are blocked, open DevTools on the official scheduling page, paste the scraper below into the Console, and press Enter.</p>
+    <div class="row">
+      <button class="btn" id="copyBtn" type="button">Copy scraper</button>
+      <a class="btn" href="/scraper/scrape.js" download="scrape.js">Download scraper</a>
+      <span class="note" id="copyStatus" role="status"></span>
+    </div>
+    <details class="more-filters">
+      <summary>View scraper source</summary>
+      <pre class="snippet" id="snippet">Loading scraper source…</pre>
+    </details>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <p><strong>Independent student tool.</strong> Not affiliated with or endorsed by Singapore Institute of Management.</p>
+    <nav class="footer-links" aria-label="Footer navigation"><a href="/">Room finder</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="https://github.com/Shisa2025/simtimetable/issues">Feedback</a></nav>
+  </div>
+</footer>
+<script src="/assets/site.js"></script>
+<script src="/assets/advanced.js"></script>
+</body>
+</html>

@@ -82,9 +82,9 @@ payload.auto = true;   // provenance: the viewer shows "updated automatically"
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify(payload, null, 2) + '\n');
 
-const freeAllDay = payload.rooms.filter(r => r.activities === 0).length;
+const unbooked = payload.rooms.filter(r => r.activities === 0).length;
 log(`${payload.rows.length} bookings across ${payload.rooms.length} rooms ` +
-    `(${freeAllDay} free all day) for ${payload.schedule_dates.join(', ') || 'no dated activities'}`);
+    `(${unbooked} unbooked, access unknown) for ${payload.schedule_dates.join(', ') || 'no dated activities'}`);
 log(`Wrote ${OUT}`);
 
 if (PUBLISH) {

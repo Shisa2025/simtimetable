@@ -76,8 +76,17 @@ const OPENER_SCRIPT = `(async () => {
   const VIEWER_ORIGIN = window.location.origin;
   const payload = await (await fetch('/sample/sim-timetable.sample.json')).json();
   payload.scraped_at = new Date().toISOString();
+  const dateParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).reduce((out, part) => (out[part.type] = part.value, out), {});
+  payload.schedule_dates = [dateParts.year + '-' + dateParts.month + '-' + dateParts.day];
+  payload.rows.forEach(row => {
+    if (/free access/i.test(row.event || '')) {
+      row.start = '12:00 AM'; row.end = '12:00 AM'; row.start_min = 0; row.end_min = 1440;
+    }
+  });
 
-  const win = window.open(VIEWER_ORIGIN + '/viewer?awaiting=1', 'simTimetableViewer');
+  const win = window.open(VIEWER_ORIGIN + '/?awaiting=1', 'simTimetableViewer');
   if (!win) return JSON.stringify({ fatal: 'popup blocked' });
 
   let pumps = 0;
@@ -103,9 +112,9 @@ const OPENER_SCRIPT = `(async () => {
     waitingPanelHidden: d.getElementById('waitingPanel').hidden,
     importPanelHidden: d.getElementById('importPanel').hidden,
     appHidden: d.getElementById('app').hidden,
-    header: d.getElementById('source').textContent,
-    rooms: d.querySelectorAll('.room-card:not(.summary-card)').length,
-    summaryCards: d.querySelectorAll('.summary-card').length,
+    header: d.getElementById('updatedValue').textContent,
+    rooms: d.querySelectorAll('.availability-card.is-open').length,
+    heading: d.querySelector('h1') && d.querySelector('h1').textContent,
     persisted: !!win.localStorage.getItem('sim-timetable-payload'),
   };
   win.close();
@@ -116,7 +125,7 @@ const OPENER_SCRIPT = `(async () => {
 // to inject data into it.
 const SPOOF_SCRIPT = `(async () => {
   const O = window.location.origin;
-  const win = window.__t = window.open(O + '/viewer?awaiting=1', 'spoofTarget');
+  const win = window.__t = window.open(O + '/?awaiting=1', 'spoofTarget');
   if (!win) return JSON.stringify({ fatal: 'popup blocked' });
   await new Promise(r => setTimeout(r, 900));
 
@@ -140,6 +149,20 @@ const SPOOF_SCRIPT = `(async () => {
     stillWaiting: !d.getElementById('waitingPanel').hidden,
     appHidden: d.getElementById('app').hidden,
     fakeRendered: d.body.innerHTML.includes('FAKE'),
+  };
+  win.close();
+  return JSON.stringify(out);
+})()`;
+
+const COMPAT_SCRIPT = `(async () => {
+  const win = window.open(window.location.origin + '/viewer?awaiting=1', 'compatTarget');
+  if (!win) return JSON.stringify({ fatal: 'popup blocked' });
+  await new Promise(r => setTimeout(r, 1000));
+  const out = {
+    pathname: win.location.pathname,
+    search: win.location.search,
+    openerPreserved: win.opener === window,
+    waiting: !!win.document.getElementById('waitingPanel') && !win.document.getElementById('waitingPanel').hidden,
   };
   win.close();
   return JSON.stringify(out);
@@ -181,7 +204,8 @@ try {
   check('waiting panel hidden after delivery', r.waitingPanelHidden === true);
   check('import panel stays hidden', r.importPanelHidden === true);
   check('timetable is showing', r.appHidden === false);
-  check('rendered all sample rooms', r.rooms === 6, `${r.rooms} rooms`);
+  check('rendered confirmed open sample rooms', r.rooms === 2, `${r.rooms} rooms`);
+  check('student-first heading is present', /Find a room/.test(r.heading), JSON.stringify(r.heading));
   check('persisted to localStorage', r.persisted === true);
   check('query string cleaned from URL', !r.viewerUrl.includes('awaiting'), r.viewerUrl);
   check('header shows freshness', /just now|min ago/.test(r.header), JSON.stringify(r.header));
@@ -191,6 +215,14 @@ try {
   if (s.fatal) throw new Error(s.fatal);
   check('spoofed payload rejected', s.fakeRendered === false);
   check('viewer still waiting', s.stillWaiting === true);
+
+  console.log('\n--- compatibility: old /viewer route preserves handoff state ---');
+  const c = await evalInNewTab(cdp, BASE + '/', COMPAT_SCRIPT);
+  if (c.fatal) throw new Error(c.fatal);
+  check('old viewer route redirects to the root app', c.pathname === '/', c.pathname);
+  check('old viewer route preserves the awaiting query', c.search.includes('awaiting=1'), c.search);
+  check('old viewer route preserves the opener relationship', c.openerPreserved === true);
+  check('redirected app enters the waiting state', c.waiting === true);
 } catch (err) {
   console.error('ERROR:', err.message);
   failures++;

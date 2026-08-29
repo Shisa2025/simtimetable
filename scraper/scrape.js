@@ -3,7 +3,7 @@
 //
 // Run this on https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM
 //
-// Easiest way: use the bookmarklet from https://sim-timetable.vercel.app —
+// Easiest way: use the bookmarklet from https://simtimetable.vercel.app/advanced —
 // click it while on the scheduling page and it opens the viewer, reads the
 // schedule, and hands it straight over. No files, no pasting.
 //
@@ -27,7 +27,7 @@
   // The landing page rewrites this placeholder to its own origin when you copy
   // the script or build the bookmarklet, so local dev hands off to localhost.
   let VIEWER_ORIGIN = '__VIEWER_ORIGIN__';
-  if (VIEWER_ORIGIN.slice(0, 2) === '__') VIEWER_ORIGIN = 'https://sim-timetable.vercel.app';
+  if (VIEWER_ORIGIN.slice(0, 2) === '__') VIEWER_ORIGIN = 'https://simtimetable.vercel.app';
 
   /* Progress reporting. The reader is looking at the viewer tab, so that is
    * where the running commentary goes; headless runs just log. */
@@ -59,7 +59,7 @@
   let viewerWin = null;
   if (!HEADLESS) {
     try {
-      viewerWin = window.open(VIEWER_ORIGIN + '/viewer?awaiting=1', 'simTimetableViewer');
+      viewerWin = window.open(VIEWER_ORIGIN + '/?awaiting=1', 'simTimetableViewer');
     } catch (err) {
       viewerWin = null;
     }
@@ -218,15 +218,15 @@
   };
 
 
-  const freeAllDay = rooms.filter(r => r.activities === 0).length;
+  const unbooked = rooms.filter(r => r.activities === 0).length;
   report(
     'Sending to the viewer',
-    rows.length + ' bookings, ' + rooms.length + ' rooms, ' + freeAllDay + ' with Free Access',
+    rows.length + ' bookings, ' + rooms.length + ' rooms, ' + unbooked + ' unbooked (access unknown)',
     0.95
   );
   console.log(
     `Read ${rows.length} bookings across ${rooms.length} rooms ` +
-    `(${freeAllDay} free all day) for ${payload.schedule_dates.join(', ') || 'no dated activities'}.`
+    `(${unbooked} unbooked, access unknown) for ${payload.schedule_dates.join(', ') || 'no dated activities'}.`
   );
 
   if (HEADLESS) {
@@ -301,7 +301,7 @@
       console.log('Clipboard copy was blocked (that is fine) — use the downloaded file instead.');
     }
 
-    console.log('Open the viewer and drop in sim-timetable.json.');
+    console.log('Open the room finder and load sim-timetable.json from Advanced tools.');
   }
 
   window.simTimetable = payload;

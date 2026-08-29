@@ -1,7 +1,7 @@
 # PRD — SIM Campus Timetable
 
 **Status:** shipped (v1) · **Last updated:** 2026-08-23
-**Live:** https://sim-timetable.vercel.app · **Repo:** https://github.com/Cetus024/sim-timetable
+**Live:** https://simtimetable.vercel.app · **Repo:** https://github.com/Shisa2025/simtimetable
 
 ---
 
@@ -88,7 +88,7 @@ reason the project launches a browser to perform what is otherwise one HTTP GET.
 
 A second, softer constraint follows from the same server: the API sends no
 `Access-Control-Allow-Origin`, so it is same-origin only. The viewer cannot call it from
-`sim-timetable.vercel.app`. That is why the data arrives as a published file, and why the
+`simtimetable.vercel.app`. That is why the data arrives as a published file, and why the
 bookmarklet has to run *on* the scheduling page.
 
 > **Superseded:** earlier versions of this document said the schedule sat behind the user's login
@@ -98,13 +98,13 @@ bookmarklet has to run *on* the scheduling page.
 
 ## 6. User stories
 
-> **US1** — As a student between classes, I want to see which rooms I can actually get into
-> after 4pm, so I can pick one without reading the whole schedule.
-> *Availability view + "Open after" filter, matching Free Access windows.*
+> **US1** — As a student between classes, I want to see which rooms I can use right now and
+> how long they remain open, so I can decide without reading the whole schedule.
+> *Open now view, using Singapore time and explicit Free Access windows.*
 
-> **US2** — As a student, I want to exclude labs and the sports hall, because I can't just walk
-> into those.
-> *"Exclude contains" filter, comma-separated.*
+> **US2** — As a student with a group, I want to filter by capacity and required duration so I
+> do not walk to a room that is too small or closes too soon.
+> *Group size and Need room for filters.*
 
 > **US3** — As a student already near Block B, I want to only see Block B, floor 5.
 > *Block and floor dropdowns, populated from the data.*
@@ -144,7 +144,7 @@ bookmarklet has to run *on* the scheduling page.
   clipboard copy if the viewer tab cannot be opened or never acknowledges.
 - **FR7** Sends the data nowhere except the reader's own viewer tab.
 
-### Viewer (`viewer.html`)
+### Student room finder (`index.html`)
 
 - **FR8** Imports JSON by file drop, file picker, clipboard read, or paste-into-textarea.
   Multiple routes because browsers block some of them depending on context.
@@ -196,15 +196,14 @@ So, per room, sorted by start time:
   either, so it is shown muted and labelled as such;
 - everything after the last booking is a GAP, open-ended, since the schedule covers only the day.
 
-The availability view leads with the OPEN rooms and their windows. Unbooked rooms are reported as
-a count with a one-line explanation, never as a list of destinations. "Open after X" matches rooms
-whose Free Access window *starts* at or after X.
+The default view leads with rooms open now, then the next confirmed windows later today. Unbooked
+rooms are reported as a count with a one-line explanation, never as a list of destinations.
 
 ## 8. Success criteria
 
 | Criterion | Target | Status |
 | --- | --- | --- |
-| Time to answer "where's free after 4pm?" | < 15s from opening the viewer | ✅ two filter fields |
+| Time to answer "what can I use now?" | < 10s from opening the site | ✅ direct root view |
 | Scrape coverage | 100% of rows, or an explicit warning | ✅ verified against site total |
 | Data leaving the browser | zero bytes | ✅ static host, no backend |
 | Runtime dependencies | zero | ✅ no npm packages, no CDN |

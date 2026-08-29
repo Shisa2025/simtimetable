@@ -123,6 +123,7 @@ export async function withBrowser(fn, { port = 9455, args = [] } = {}) {
       }
       return res.result.value;
     },
+    send: (method, params = {}, sessionId) => cdp.send(method, params, sessionId),
     close: (targetId) => cdp.send('Target.closeTarget', { targetId }),
   };
 
