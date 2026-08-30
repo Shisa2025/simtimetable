@@ -5,41 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script>(function(){try{var t=localStorage.getItem('sim-timetable-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858" crossorigin="anonymous"></script>
-<title>SIM Campus Timetable — Find Free Access Rooms</title>
-<meta name="description" content="Find SIM campus rooms that are explicitly open to students now, see what opens later, and browse today's timetable." />
-<meta name="theme-color" content="#17324D" />
+<title>SIM Timetable — Find Free Access Rooms by Time</title>
+<meta name="description" content="Choose a time and find SIM campus rooms marked Free Access." />
+<meta name="theme-color" content="#132019" />
 <link rel="canonical" href="https://simtimetable.vercel.app/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="SIM Campus Timetable" />
-<meta property="og:description" content="Find SIM campus rooms that are explicitly open to students now." />
+<meta property="og:title" content="SIM Timetable" />
+<meta property="og:description" content="Choose a time. Find a Free Access room." />
 <meta property="og:url" content="https://simtimetable.vercel.app/" />
 <meta property="og:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
-<meta property="og:image:width" content="1731" />
-<meta property="og:image:height" content="909" />
-<meta property="og:image:alt" content="SIM Campus Timetable — Find rooms you can actually use." />
+<meta property="og:image:width" content="1734" />
+<meta property="og:image:height" content="907" />
+<meta property="og:image:alt" content="SIM Timetable — Find a Free Access room." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="SIM Campus Timetable" />
-<meta name="twitter:description" content="Find SIM campus rooms that are explicitly open to students now." />
+<meta name="twitter:title" content="SIM Timetable" />
+<meta name="twitter:description" content="Choose a time. Find a Free Access room." />
 <meta name="twitter:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
 <link rel="stylesheet" href="/assets/styles.css" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%2317324d%22/><text x=%2250%22 y=%2263%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 font-weight=%22700%22 fill=%22white%22>ST</text></svg>" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%23132019%22/><path d=%22M18 67h64M28 49h44M39 31h22%22 stroke=%22%236CDEA5%22 stroke-width=%2210%22 stroke-linecap=%22round%22/></svg>" />
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to room finder</a>
 
 <header class="site-header">
   <div class="site-header-inner">
-    <a class="brand" href="/" aria-label="SIM Campus Timetable home">
-      <span class="brand-mark" aria-hidden="true">ST</span>
+    <a class="brand" href="/" aria-label="SIM Timetable home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="brand-copy">
-        <strong>SIM Campus Timetable</strong>
-        <small>Independent student tool</small>
+        <strong>SIM Timetable</strong>
+        <small>Free Access rooms</small>
       </span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <a href="/#open-now" data-view-link="now">Find rooms</a>
-      <a href="/#today" data-view-link="today">Today</a>
-      <a href="/#schedule" data-view-link="schedule">Full schedule</a>
+      <a href="/#free-access" data-view-link="now">Free Access</a>
+      <a href="/#schedule" data-view-link="schedule">Timetable</a>
       <a href="/about">About</a>
     </nav>
     <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme.">
@@ -48,17 +47,34 @@
   </div>
 </header>
 
-<main class="page-shell" id="main">
-  <section class="app-hero" aria-labelledby="pageTitle">
-    <div class="hero-copy">
-      <p class="eyebrow">Live campus room finder</p>
-      <h1 id="pageTitle">Find a room you can actually use.</h1>
-      <p>Only rooms explicitly marked <strong>Free Access</strong> by SIM are shown as open. Unallocated rooms may still be locked.</p>
+<main class="page-shell app-shell" id="main">
+  <section class="workspace-intro" aria-labelledby="pageTitle">
+    <div>
+      <p class="eyebrow">SIM campus · Singapore</p>
+      <h1 id="pageTitle">Find a Free Access room.</h1>
+      <p>Pick a time, then narrow it down.</p>
     </div>
-    <div class="singapore-clock" aria-live="off">
-      <span>Singapore time</span>
-      <strong id="sgTime">—</strong>
-      <small id="sgDate">Loading date…</small>
+    <div class="workspace-meta" id="workspaceMeta" hidden>
+      <div class="data-stamp">
+        <span>Schedule</span>
+        <strong id="dateValue">—</strong>
+        <small id="dateDetail">Loading…</small>
+      </div>
+      <div class="data-stamp">
+        <span>Updated</span>
+        <strong id="updatedValue">—</strong>
+        <small id="updatedDetail">Checking…</small>
+      </div>
+      <details class="data-menu">
+        <summary>Data</summary>
+        <div class="data-menu-panel">
+          <button type="button" id="exportBtn">Download offline copy</button>
+          <button type="button" id="showImportBtn">Load my own data</button>
+          <a href="/advanced">Advanced refresh tools</a>
+          <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
+          <span class="action-status" id="exportStatus" role="status"></span>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -101,23 +117,7 @@
   </section>
 
   <section id="app" hidden>
-    <div class="status-strip" aria-label="Schedule summary">
-      <div class="status-card is-open"><span>Open now</span><strong id="openValue">—</strong><small>Confirmed Free Access</small></div>
-      <div class="status-card"><span>Opening later</span><strong id="laterValue">—</strong><small>Today in Singapore</small></div>
-      <div class="status-card"><span>Schedule date</span><strong id="dateValue">—</strong><small id="dateDetail">Loading…</small></div>
-    </div>
-    <div class="status-card" style="min-height:0;margin-bottom:16px">
-      <span>Latest data</span><strong id="updatedValue" style="font-size:18px">—</strong><small id="updatedDetail">Checking…</small>
-    </div>
-
     <div id="timetable"></div>
-
-    <div class="app-actions">
-      <button class="btn" id="exportBtn" type="button">Download offline copy</button>
-      <button class="btn" id="showImportBtn" type="button">Load my own data</button>
-      <a class="btn" href="/advanced">Advanced refresh tools</a>
-      <span class="action-status" id="exportStatus" role="status"></span>
-    </div>
   </section>
 </main>
 

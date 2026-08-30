@@ -1,8 +1,8 @@
 # SIM Campus Timetable
 
 An independent student tool for finding SIM campus rooms that are explicitly marked
-**Free Access**. It answers what is open now, what opens later today, and provides the full
-published schedule without claiming that unallocated rooms are available.
+**Free Access**. Choose a time, see how availability changes through the day, and browse the
+full published schedule without claiming that unallocated rooms are available.
 
 | | |
 | --- | --- |
@@ -15,9 +15,9 @@ Management (SIM).
 
 ## Student experience
 
-- **Open now** — confirmed Free Access rooms, sorted by how long they remain open.
-- **Opening later** — the next confirmed window for matching rooms.
-- **Today's availability** — each Free Access room with its open, busy, and unknown timeline.
+- **Time lens** — move through the day in 30-minute steps and see matching room counts at a glance.
+- **Free Access results** — rooms available at the selected time, sorted by capacity fit and remaining duration.
+- **Day schedule** — each result expands to its Free Access, busy, and unknown timeline.
 - **Full schedule** — every published booking, with live status calculated in Singapore time.
 - Filters for block, floor, room, capacity, and required duration.
 - Light, dark, and system themes; responsive cards for mobile screens.
@@ -29,7 +29,7 @@ tutor rooms, and other spaces, so those periods are labelled **Unknown / may be 
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Student room finder |
+| `/` | Time-lens Free Access room finder |
 | `/viewer` | Backwards-compatible redirect to the room finder |
 | `/advanced` | Bookmarklet, scraper, and JSON import tools |
 | `/about` | Data source, definitions, and limitations |

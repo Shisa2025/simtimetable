@@ -1,4 +1,4 @@
-// Deterministic browser checks for the student room finder.
+// Deterministic browser checks for the time-lens room finder.
 // Start scripts/serve.mjs first, then run: node scripts/test-ui.mjs [baseUrl]
 
 import { withBrowser, sleep } from './lib/cdp.mjs';
@@ -64,6 +64,7 @@ await withBrowser(async browser => {
         overflow: document.documentElement.scrollWidth - innerWidth,
         minTarget: targets.length ? Math.min(...targets) : 0,
         gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 0,
+        hasLens: !!document.querySelector('.time-lens'),
       });
     })()`, sessionId));
   }
@@ -77,9 +78,10 @@ await withBrowser(async browser => {
   check('768px layout has no horizontal page overflow', responsive.tablet.overflow <= 0, String(responsive.tablet.overflow));
   check('1440px layout has no horizontal page overflow', responsive.desktop.overflow <= 0, String(responsive.desktop.overflow));
   check('mobile controls meet the 44px touch target', responsive.mobile.minTarget >= 44, String(responsive.mobile.minTarget));
-  check('mobile availability results use one column', responsive.mobile.gridColumns === 1, String(responsive.mobile.gridColumns));
-  check('desktop availability results use two columns', responsive.desktop.gridColumns === 2, String(responsive.desktop.gridColumns));
-  check('dark theme applies the planned background token', themeResult === 'rgb(15, 23, 42)', themeResult);
+  check('mobile Free Access results use one column', responsive.mobile.gridColumns === 1, String(responsive.mobile.gridColumns));
+  check('desktop Free Access results use two columns', responsive.desktop.gridColumns === 2, String(responsive.desktop.gridColumns));
+  check('the time lens renders at every viewport', responsive.mobile.hasLens && responsive.tablet.hasLens && responsive.desktop.hasLens);
+  check('dark theme applies the ink-green background token', themeResult === 'rgb(13, 19, 16)', themeResult);
 
   const result = JSON.parse(await browser.evaluate(`(() => {
     const clock = SIMTimetable.singaporeClock('2026-08-28T16:30:00.000Z');
@@ -88,6 +90,8 @@ await withBrowser(async browser => {
       { room: 'SR.B.2.01', block: 'B', floor: 2, start: '10:00 AM', end: '12:00 PM', start_min: 600, end_min: 720, event: 'SST Free Access', room_description: 'B.2.01 (20pax)' },
       { room: 'TR.A.2.07', block: 'A', floor: 2, start: '10:00 AM', end: '1:00 PM', start_min: 600, end_min: 780, event: 'Free Access', room_description: 'Tutor room' },
       { room: 'LT.C.3.01', block: 'C', floor: 3, start: '1:00 PM', end: '5:00 PM', start_min: 780, end_min: 1020, event: 'Free Access', room_description: 'C.3.01 (100pax)' },
+      { room: 'LAB.C.3.07', block: 'C', floor: 3, start: '8:00 AM', end: '9:00 AM', start_min: 480, end_min: 540, event: 'Free Access', room_description: 'C.3.07 (30pax)' },
+      { room: 'LAB.C.3.07', block: 'C', floor: 3, start: '2:00 PM', end: '10:00 PM', start_min: 840, end_min: 1320, event: 'Free Access', room_description: 'C.3.07 (30pax)' },
       { room: 'LT.A.1.01', block: 'A', floor: 1, start: '3:00 PM', end: '5:00 PM', start_min: 900, end_min: 1020, event: 'Lecture', room_description: 'A.1.01 (60pax-CRS)' }
     ];
     document.body.innerHTML = '<div id="fixture"></div>';
@@ -96,56 +100,69 @@ await withBrowser(async browser => {
       mode: 'now', now: '2026-08-29T03:00:00.000Z', scheduleCurrent: true,
       rooms: [{ room: 'LAB.X', block: 'A', floor: 1, activities: 0, description: 'Lab' }]
     });
-    const initialCards = [...root.querySelectorAll('.availability-card.is-open h3')].map(n => n.textContent);
-    const initialLater = [...root.querySelectorAll('.availability-card.is-later h3')].map(n => n.textContent);
-    const capacity = SIMTimetable.normalize(rows)[0].capacity;
+    const atEleven = [...root.querySelectorAll('.availability-card.is-free h3')].map(n => n.textContent);
+    const initialState = controller.getState();
+    const lensBars = root.querySelectorAll('.lens-bars span').length;
 
     const group = root.querySelector('[data-f="group"]');
     group.value = '40'; group.dispatchEvent(new Event('change', { bubbles: true }));
-    const groupOpen = [...root.querySelectorAll('.availability-card.is-open h3')].map(n => n.textContent);
-    const groupLater = [...root.querySelectorAll('.availability-card.is-later h3')].map(n => n.textContent);
+    const groupRooms = [...root.querySelectorAll('.availability-card.is-free h3')].map(n => n.textContent);
 
     group.value = ''; group.dispatchEvent(new Event('change', { bubbles: true }));
     const duration = root.querySelector('[data-f="duration"]');
     duration.value = '120'; duration.dispatchEvent(new Event('change', { bubbles: true }));
-    const durationOpen = [...root.querySelectorAll('.availability-card.is-open h3')].map(n => n.textContent);
+    const durationRooms = [...root.querySelectorAll('.availability-card.is-free h3')].map(n => n.textContent);
 
-    const boundaryRoot = document.createElement('div');
-    document.body.appendChild(boundaryRoot);
-    SIMTimetable.mount(boundaryRoot, rows, {
-      mode: 'now', now: '2026-08-29T04:00:00.000Z', scheduleCurrent: true
-    });
-    const boundaryOpen = [...boundaryRoot.querySelectorAll('.availability-card.is-open h3')].map(n => n.textContent);
+    duration.value = '0'; duration.dispatchEvent(new Event('change', { bubbles: true }));
+    controller.setQueryMinute(720);
+    const boundaryRooms = [...root.querySelectorAll('.availability-card.is-free h3')].map(n => n.textContent);
+    controller.setQueryMinute(840);
+    const atTwo = [...root.querySelectorAll('.availability-card.is-free h3')].map(n => n.textContent);
+    const expandedTimelines = root.querySelectorAll('.room-details').length;
+
+    controller.setQueryMinute(660);
+    group.value = '100'; group.dispatchEvent(new Event('change', { bubbles: true }));
+    const hasNextAction = !!root.querySelector('[data-action="next"]');
+    group.value = ''; group.dispatchEvent(new Event('change', { bubbles: true }));
 
     controller.setMode('today');
-    const todayRooms = root.querySelectorAll('.timeline-card').length;
-    const unknownLabels = root.querySelectorAll('.status-unknown').length;
+    const legacyMode = controller.getMode();
     controller.setMode('schedule');
     const scheduleRows = root.querySelectorAll('.schedule-table tbody tr').length;
     const mobileCards = root.querySelectorAll('.schedule-card').length;
 
+    const staleRoot = document.createElement('div');
+    document.body.appendChild(staleRoot);
+    SIMTimetable.mount(staleRoot, rows, {
+      mode: 'now', now: '2026-08-29T03:00:00.000Z', scheduleCurrent: false,
+      initial: { queryMinute: 840 }
+    });
+
     return JSON.stringify({
-      singaporeDate: clock.date, singaporeMinutes: clock.minutes, capacity,
-      initialCards, initialLater, groupOpen, groupLater, durationOpen,
-      boundaryOpen, todayRooms, unknownLabels, scheduleRows, mobileCards,
-      mode: controller.getMode(), hasFocusStyles: true
+      singaporeDate: clock.date, singaporeMinutes: clock.minutes,
+      atEleven, initialState, lensBars, groupRooms, durationRooms,
+      boundaryRooms, atTwo, expandedTimelines, hasNextAction, legacyMode,
+      scheduleRows, mobileCards,
+      staleLabel: staleRoot.querySelector('[data-el="queryLabel"]').textContent,
+      staleNowDisabled: staleRoot.querySelector('[data-el="nowBtn"]').disabled,
+      staleCards: staleRoot.querySelectorAll('.availability-card.is-free').length
     });
   })()`, sessionId));
 
   check('Singapore date is independent of visitor timezone', result.singaporeDate === '2026-08-29', result.singaporeDate);
   check('Singapore minute calculation is correct', result.singaporeMinutes === 30, String(result.singaporeMinutes));
-  check('capacity is derived from room description', result.capacity === 60, String(result.capacity));
-  check('Open now uses the start-inclusive/end-exclusive window', result.initialCards.length === 3, result.initialCards.join(', '));
-  check('Open now sorts the longest remaining window first', result.initialCards[0] === 'LT.A.1.01', result.initialCards.join(', '));
-  check('later rooms are shown alongside current rooms', result.initialLater.length === 1 && result.initialLater[0] === 'LT.C.3.01', result.initialLater.join(', '));
-  check('group-size filter excludes unknown and undersized rooms', result.groupOpen.length === 1 && result.groupOpen[0] === 'LT.A.1.01', result.groupOpen.join(', '));
-  check('group-size filter applies to later rooms', result.groupLater.length === 1 && result.groupLater[0] === 'LT.C.3.01', result.groupLater.join(', '));
-  check('duration filter uses remaining time for current rooms', result.durationOpen.length === 2 && !result.durationOpen.includes('SR.B.2.01'), result.durationOpen.join(', '));
-  check('a Free Access window is closed at its exact end time', !result.boundaryOpen.includes('SR.B.2.01'), result.boundaryOpen.join(', '));
-  check('Today view lists every confirmed Free Access room', result.todayRooms === 4, String(result.todayRooms));
-  check('Today view labels unallocated gaps as unknown', result.unknownLabels > 0, String(result.unknownLabels));
-  check('Full schedule renders desktop and mobile representations', result.scheduleRows === 5 && result.mobileCards === 5, `${result.scheduleRows}/${result.mobileCards}`);
-  check('public controller supports the schedule mode', result.mode === 'schedule', result.mode);
+  check('the default query follows the exact current minute', result.initialState.queryMinute === 660 && result.initialState.queryTracksNow, JSON.stringify(result.initialState));
+  check('Free Access results use longest availability first', result.atEleven.join(',') === 'LT.A.1.01,TR.A.2.07,SR.B.2.01', result.atEleven.join(', '));
+  check('the lens exposes 30-minute availability bars', result.lensBars > 10, String(result.lensBars));
+  check('group size excludes unknown and undersized rooms', result.groupRooms.length === 1 && result.groupRooms[0] === 'LT.A.1.01', result.groupRooms.join(', '));
+  check('duration uses remaining time from the selected minute', result.durationRooms.length === 2 && !result.durationRooms.includes('SR.B.2.01'), result.durationRooms.join(', '));
+  check('Free Access is start-inclusive and end-exclusive', !result.boundaryRooms.includes('SR.B.2.01'), result.boundaryRooms.join(', '));
+  check('time selection finds later and multi-window rooms', result.atTwo.includes('LT.C.3.01') && result.atTwo.includes('LAB.C.3.07'), result.atTwo.join(', '));
+  check('each result carries its expandable day schedule', result.expandedTimelines === result.atTwo.length, String(result.expandedTimelines));
+  check('zero results offer a jump to the next matching time', result.hasNextAction);
+  check('legacy Today mode maps to the Free Access finder', result.legacyMode === 'now', result.legacyMode);
+  check('Full timetable renders desktop and mobile representations', result.scheduleRows === 7 && result.mobileCards === 7, `${result.scheduleRows}/${result.mobileCards}`);
+  check('stale data is labelled Reference and disables Now', result.staleLabel === 'Reference' && result.staleNowDisabled && result.staleCards > 0, `${result.staleLabel}/${result.staleCards}`);
 
   await browser.close(targetId);
 }, { port: 9456 });

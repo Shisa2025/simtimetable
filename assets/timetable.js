@@ -1,4 +1,4 @@
-/* SIM Campus Timetable — dependency-free parsing and student-first rendering.
+/* SIM Timetable — dependency-free parsing and time-first room finding.
  *
  * Used by the live site and inlined into standalone exports. Keep this file
  * browser-native so an exported timetable works without a network connection.
@@ -25,9 +25,7 @@
   function parseTimeRange(timeStr) {
     var clean = (timeStr || '').replace(/\u00a0/g, ' ').trim();
     var parts = clean.split(/\s*-\s*/);
-    if (parts.length !== 2) {
-      return { start: null, end: null, start_min: null, end_min: null };
-    }
+    if (parts.length !== 2) return { start: null, end: null, start_min: null, end_min: null };
     var start = parts[0].trim();
     var end = parts[1].trim();
     return { start: start, end: end, start_min: toMinutes(start), end_min: toMinutes(end) };
@@ -55,26 +53,18 @@
   function normalize(rows) {
     return (rows || []).map(function (row) {
       var r = row || {};
-      var parsed = (typeof r.start_min !== 'undefined')
+      var parsed = typeof r.start_min !== 'undefined'
         ? { start: r.start, end: r.end, start_min: r.start_min, end_min: r.end_min }
         : parseTimeRange(r.time);
       var roomDescription = r.room_description || '';
       var description = r.description || '';
       return {
-        start: parsed.start,
-        end: parsed.end,
-        start_min: parsed.start_min,
-        end_min: parsed.end_min,
+        start: parsed.start, end: parsed.end, start_min: parsed.start_min, end_min: parsed.end_min,
         block: typeof r.block !== 'undefined' ? r.block : parseBlock(r.building, r.room),
         floor: typeof r.floor !== 'undefined' ? r.floor : parseFloor(r.room),
-        room: r.room || '',
-        event: r.event || '',
-        status: r.status || '',
-        description: description,
-        room_description: roomDescription,
-        capacity: typeof r.capacity === 'number'
-          ? r.capacity
-          : (parseCapacity(roomDescription) || parseCapacity(description))
+        room: r.room || '', event: r.event || '', status: r.status || '',
+        description: description, room_description: roomDescription,
+        capacity: typeof r.capacity === 'number' ? r.capacity : (parseCapacity(roomDescription) || parseCapacity(description))
       };
     });
   }
@@ -85,26 +75,16 @@
     var date = input instanceof Date ? input : new Date(input || Date.now());
     if (isNaN(date.getTime())) date = new Date();
     var parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: SINGAPORE_TZ,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23'
+      timeZone: SINGAPORE_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     }).formatToParts(date);
     var values = {};
-    parts.forEach(function (part) {
-      if (part.type !== 'literal') values[part.type] = part.value;
-    });
+    parts.forEach(function (part) { if (part.type !== 'literal') values[part.type] = part.value; });
     var hour = parseInt(values.hour, 10) || 0;
     var minute = parseInt(values.minute, 10) || 0;
     return {
       date: values.year + '-' + values.month + '-' + values.day,
-      minutes: hour * 60 + minute,
-      hour: hour,
-      minute: minute,
-      value: date
+      minutes: hour * 60 + minute, hour: hour, minute: minute, value: date
     };
   }
 
@@ -115,11 +95,8 @@
 
   function esc(value) {
     return String(value === null || typeof value === 'undefined' ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function uniqueSorted(values, compare) {
@@ -127,10 +104,7 @@
     var out = [];
     values.forEach(function (value) {
       var key = String(value);
-      if (!seen[key]) {
-        seen[key] = true;
-        out.push(value);
-      }
+      if (!seen[key]) { seen[key] = true; out.push(value); }
     });
     return compare ? out.sort(compare) : out.sort();
   }
@@ -147,6 +121,17 @@
     return hours + ' hr' + (hours === 1 ? '' : 's') + (remainder ? ' ' + remainder + ' min' : '');
   }
 
+  function formatMinute(minute) {
+    if (Number(minute) === 1440) return 'Midnight';
+    minute = ((Number(minute) % 1440) + 1440) % 1440;
+    var hour = Math.floor(minute / 60);
+    var min = minute % 60;
+    var suffix = hour >= 12 ? 'PM' : 'AM';
+    return (hour % 12 || 12) + ':' + String(min).padStart(2, '0') + ' ' + suffix;
+  }
+
+  function clamp(value, min, max) { return Math.min(max, Math.max(min, Number(value))); }
+
   function liveStatus(row, nowMinutes, scheduleCurrent) {
     if (!scheduleCurrent) return 'SCHEDULED';
     if (row.start_min === null || row.end_min === null) return row.status || 'SCHEDULED';
@@ -155,19 +140,15 @@
     return 'UPCOMING';
   }
 
-  /* A gap means unallocated, never confirmed open. */
+  /* A gap means unallocated, never confirmed Free Access. */
   function buildTimeline(bookings) {
     bookings = bookings.slice().sort(function (a, b) { return a.start_min - b.start_min; });
     var timeline = [];
     bookings.forEach(function (booking, index) {
       timeline.push({
-        type: isFreeAccess(booking) ? 'open' : 'busy',
-        start_min: booking.start_min,
-        end_min: booking.end_min,
-        start: booking.start,
-        end: booking.end,
-        event: booking.event,
-        open_ended: false
+        type: isFreeAccess(booking) ? 'open' : 'busy', start_min: booking.start_min,
+        end_min: booking.end_min, start: booking.start, end: booking.end,
+        event: booking.event, open_ended: false
       });
       var next = bookings[index + 1];
       if (next && next.start_min > booking.end_min) {
@@ -197,33 +178,46 @@
     var location = [];
     if (info.block) location.push('Block ' + esc(info.block));
     if (info.floor !== null && typeof info.floor !== 'undefined') location.push('Level ' + esc(info.floor));
-    var capacity = info.capacity ? esc(info.capacity) + ' seats' : 'Capacity unavailable';
-    return '<span>' + (location.join(' · ') || 'Location unavailable') + '</span>' +
-      '<span>' + capacity + '</span>';
+    var parts = [];
+    if (location.length) parts.push('<span>' + location.join(' · ') + '</span>');
+    if (info.capacity) parts.push('<span>' + esc(info.capacity) + ' seats</span>');
+    return parts.join('');
   }
 
   // ---------- UI ----------
 
   var UI_HTML = [
-    '<section class="finder-panel" aria-labelledby="finderHeading">',
-    '  <div class="view-tabs" role="tablist" aria-label="Timetable views">',
-    '    <button type="button" role="tab" data-mode="now">Open now</button>',
-    '    <button type="button" role="tab" data-mode="today">Today\'s availability</button>',
-    '    <button type="button" role="tab" data-mode="schedule">Full schedule</button>',
+    '<section class="finder-panel" aria-label="Room timetable">',
+    '  <div class="finder-topline">',
+    '    <div class="view-tabs" role="tablist" aria-label="Timetable views">',
+    '      <button type="button" role="tab" data-mode="now">Free Access</button>',
+    '      <button type="button" role="tab" data-mode="schedule">Full timetable</button>',
+    '    </div>',
+    '    <button class="text-button" data-el="resetBtn" type="button">Reset</button>',
     '  </div>',
-    '  <div class="filter-heading">',
-    '    <div><p class="eyebrow">Narrow your search</p><h2 id="finderHeading">Find the right room</h2></div>',
-    '    <button class="text-button" data-el="resetBtn" type="button">Reset filters</button>',
+    '  <div class="time-lens" data-filter-context="availability">',
+    '    <div class="lens-heading">',
+    '      <div><p class="eyebrow">Time lens</p><h2><span data-el="queryLabel">Now</span><strong data-el="queryTime">—</strong></h2></div>',
+    '      <button class="now-button" data-el="nowBtn" type="button">Now</button>',
+    '    </div>',
+    '    <div class="lens-scroll">',
+    '      <div class="lens-track">',
+    '        <div class="lens-bars" data-el="lensBars" aria-hidden="true"></div>',
+    '        <input class="lens-range" data-el="timeRange" type="range" step="30" aria-label="Find Free Access rooms at a time" />',
+    '      </div>',
+    '      <div class="lens-axis" data-el="lensAxis" aria-hidden="true"></div>',
+    '    </div>',
+    '    <p class="lens-hint" data-el="lensHint" aria-live="polite"></p>',
     '  </div>',
     '  <div class="filter-grid">',
     '    <label><span>Block</span><select data-f="block"><option value="">All blocks</option></select></label>',
-    '    <label><span>Floor</span><select data-f="floor"><option value="">All floors</option></select></label>',
-    '    <label class="filter-wide"><span>Room</span><input data-f="room" type="search" placeholder="e.g. LT.B.5" autocomplete="off" /></label>',
-    '    <label data-filter-context="availability"><span>Group size</span><select data-f="group"><option value="">Any size</option><option value="10">10+ seats</option><option value="20">20+ seats</option><option value="40">40+ seats</option><option value="60">60+ seats</option><option value="100">100+ seats</option></select></label>',
-    '    <label data-filter-context="availability"><span>Need room for</span><select data-f="duration"><option value="0">Any duration</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label>',
+    '    <label><span>Level</span><select data-f="floor"><option value="">All levels</option></select></label>',
+    '    <label data-filter-context="availability"><span>People</span><select data-f="group"><option value="">Any group</option><option value="10">10 people</option><option value="20">20 people</option><option value="40">40 people</option><option value="60">60 people</option><option value="100">100 people</option></select></label>',
+    '    <label data-filter-context="availability"><span>Stay for</span><select data-f="duration"><option value="0">Any length</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label>',
+    '    <label class="filter-wide"><span>Room</span><input data-f="room" type="search" placeholder="Room name" autocomplete="off" /></label>',
     '  </div>',
     '  <details class="more-filters">',
-    '    <summary>More filters</summary>',
+    '    <summary>Exclude rooms</summary>',
     '    <label><span>Exclude room names</span><input data-f="exclude" type="text" placeholder="e.g. LAB, MPSH" /></label>',
     '  </details>',
     '</section>',
@@ -239,15 +233,24 @@
     root.innerHTML = UI_HTML;
 
     var filters = {};
-    root.querySelectorAll('[data-f]').forEach(function (node) {
-      filters[node.getAttribute('data-f')] = node;
-    });
+    root.querySelectorAll('[data-f]').forEach(function (node) { filters[node.getAttribute('data-f')] = node; });
     var elements = {};
-    root.querySelectorAll('[data-el]').forEach(function (node) {
-      elements[node.getAttribute('data-el')] = node;
-    });
+    root.querySelectorAll('[data-el]').forEach(function (node) { elements[node.getAttribute('data-el')] = node; });
     var modeButtons = root.querySelectorAll('[data-mode]');
     var placeSource = data.concat(inventory);
+    var freeRows = data.filter(isFreeAccess);
+    var freeStarts = freeRows.map(function (row) { return row.start_min; }).filter(function (value) { return value !== null; });
+    var freeEnds = freeRows.map(function (row) { return row.end_min; }).filter(function (value) { return value !== null; });
+    var lensStart = freeStarts.length ? Math.floor(Math.min.apply(Math, freeStarts) / 30) * 30 : 480;
+    var lensEnd = freeEnds.length ? Math.ceil(Math.max.apply(Math, freeEnds) / 30) * 30 : 1320;
+    if (scheduleCurrent) {
+      var liveMinuteForBounds = getNow(opts).minutes;
+      lensStart = Math.min(lensStart, Math.floor(liveMinuteForBounds / 30) * 30);
+      lensEnd = Math.max(lensEnd, Math.ceil((liveMinuteForBounds + 30) / 30) * 30);
+    }
+    lensStart = clamp(lensStart, 0, 1410);
+    lensEnd = clamp(Math.max(lensStart + 30, lensEnd), lensStart + 30, 1440);
+    var lensMax = lensEnd - 30;
 
     uniqueSorted(placeSource.map(function (item) { return item.block; }).filter(Boolean))
       .forEach(function (block) { filters.block.add(new Option('Block ' + block, block)); });
@@ -261,6 +264,11 @@
     Object.keys(filters).forEach(function (key) {
       if (initial[key] !== null && typeof initial[key] !== 'undefined') filters[key].value = String(initial[key]);
     });
+    var initialMinute = parseInt(initial.queryMinute, 10);
+    var queryTracksNow = initial.queryTracksNow === true || isNaN(initialMinute);
+    var queryMinute = queryTracksNow && scheduleCurrent
+      ? getNow(opts).minutes
+      : clamp(queryTracksNow ? getNow(opts).minutes : initialMinute, lensStart, lensMax);
 
     var groups = {};
     data.forEach(function (row) {
@@ -275,12 +283,7 @@
         if (booking.capacity) { capacity = booking.capacity; return true; }
         return false;
       });
-      return {
-        block: base.block,
-        floor: base.floor,
-        capacity: capacity,
-        room_description: base.room_description || ''
-      };
+      return { block: base.block, floor: base.floor, capacity: capacity, room_description: base.room_description || '' };
     }
 
     function matchesPlace(room, info, ignoreGroupSize) {
@@ -296,92 +299,37 @@
       return true;
     }
 
-    function availabilityCard(item, state) {
-      var current = state === 'open';
-      var title = current ? 'Open now' : 'Opens at ' + esc(item.window.start);
-      var value = current ? 'Until ' + esc(item.window.end) : esc(item.window.start) + '–' + esc(item.window.end);
-      var detail = current
-        ? formatDuration(item.window.end_min - item.nowMinutes) + ' remaining'
-        : 'Available for ' + formatDuration(item.window.end_min - item.window.start_min);
-      return '<article class="availability-card ' + (current ? 'is-open' : 'is-later') + '">' +
-        '<div class="card-topline"><span class="status-pill ' + (current ? 'status-open' : 'status-later') + '">' +
-        '<span aria-hidden="true">' + (current ? '●' : '◷') + '</span> ' + title + '</span></div>' +
-        '<h3>' + esc(item.room) + '</h3>' +
-        '<div class="room-meta">' + roomMeta(item.info) + '</div>' +
-        '<p class="availability-value">' + value + '</p>' +
-        '<p class="availability-detail">' + detail + '</p>' +
-        '</article>';
-    }
-
-    function renderNow() {
-      var now = getNow(opts);
+    function availableAt(minute) {
       var duration = parseInt(filters.duration.value, 10) || 0;
-      var open = [];
-      var later = [];
-
-      if (scheduleCurrent) {
-        Object.keys(groups).forEach(function (room) {
-          var bookings = groups[room];
-          var info = infoFor(bookings);
-          if (!matchesPlace(room, info)) return;
-          var windows = bookings.filter(isFreeAccess).sort(function (a, b) { return a.start_min - b.start_min; });
-          var current = windows.filter(function (window) {
-            return window.start_min <= now.minutes && now.minutes < window.end_min &&
-              window.end_min - now.minutes >= duration;
+      var groupSize = parseInt(filters.group.value, 10) || 0;
+      var matches = [];
+      Object.keys(groups).forEach(function (room) {
+        var bookings = groups[room];
+        var info = infoFor(bookings);
+        if (!matchesPlace(room, info)) return;
+        var window = bookings.filter(isFreeAccess).sort(function (a, b) { return a.start_min - b.start_min; })
+          .filter(function (row) {
+            return row.start_min <= minute && minute < row.end_min && row.end_min - minute >= duration;
           })[0];
-          if (current) {
-            open.push({ room: room, info: info, window: current, nowMinutes: now.minutes });
-            return;
-          }
-          var next = windows.filter(function (window) {
-            return window.start_min > now.minutes && window.end_min - window.start_min >= duration;
-          })[0];
-          if (next) later.push({ room: room, info: info, window: next, nowMinutes: now.minutes });
-        });
-      }
-
-      open.sort(function (a, b) { return b.window.end_min - a.window.end_min || roomSort(a, b); });
-      later.sort(function (a, b) { return a.window.start_min - b.window.start_min || roomSort(a, b); });
-
-      var html = '';
-      if (!scheduleCurrent) {
-        html += '<section class="empty-state"><span class="empty-icon" aria-hidden="true">!</span>' +
-          '<h2>Live availability is paused</h2><p>This schedule is not for today in Singapore. ' +
-          'Use Today\'s availability as a reference, or refresh the data.</p></section>';
-      } else {
-        html += '<section class="result-section" aria-labelledby="openNowHeading">' +
-          '<div class="section-heading"><div><p class="eyebrow">Confirmed Free Access</p>' +
-          '<h2 id="openNowHeading">Open now <span>' + open.length + '</span></h2></div></div>';
-        if (open.length) {
-          html += '<div class="availability-grid">' + open.map(function (item) { return availabilityCard(item, 'open'); }).join('') + '</div>';
-        } else {
-          html += '<div class="inline-empty"><strong>No matching rooms are open right now.</strong>' +
-            '<span>Try another block, a smaller group size, or check what opens later.</span></div>';
+        if (window) matches.push({ room: room, info: info, bookings: bookings, window: window });
+      });
+      matches.sort(function (a, b) {
+        if (groupSize) {
+          var surplusA = (a.info.capacity || 9999) - groupSize;
+          var surplusB = (b.info.capacity || 9999) - groupSize;
+          if (surplusA !== surplusB) return surplusA - surplusB;
         }
-        html += '</section>';
-
-        html += '<section class="result-section result-section-later" aria-labelledby="laterHeading">' +
-          '<div class="section-heading"><div><p class="eyebrow">Plan ahead</p>' +
-          '<h2 id="laterHeading">Opening later today <span>' + later.length + '</span></h2></div></div>';
-        if (later.length) {
-          html += '<div class="availability-grid">' + later.map(function (item) { return availabilityCard(item, 'later'); }).join('') + '</div>';
-        } else {
-          html += '<div class="inline-empty"><strong>No more matching Free Access windows today.</strong>' +
-            '<span>The next daily schedule is normally published shortly after midnight.</span></div>';
-        }
-        html += '</section>';
-      }
-
-      elements.meta.textContent = open.length + ' open now · ' + later.length + ' opening later';
-      elements.results.innerHTML = html;
-      return { mode: 'now', openNow: open.length, laterToday: later.length, visibleCount: open.length + later.length };
+        var remaining = (b.window.end_min - minute) - (a.window.end_min - minute);
+        return remaining || roomSort(a, b);
+      });
+      return matches;
     }
 
     function timelineSegment(segment) {
       if (segment.type === 'open') {
-        return '<div class="timeline-row"><span class="status-pill status-open">OPEN</span>' +
+        return '<div class="timeline-row"><span class="status-pill status-free">FREE ACCESS</span>' +
           '<span class="timeline-time">' + esc(segment.start) + '–' + esc(segment.end) + '</span>' +
-          '<span class="timeline-label">Free Access</span></div>';
+          '<span class="timeline-label">Student access</span></div>';
       }
       if (segment.type === 'busy') {
         return '<div class="timeline-row"><span class="status-pill status-busy">BUSY</span>' +
@@ -393,50 +341,93 @@
         '<span class="timeline-label muted">Unallocated · may still be locked</span></div>';
     }
 
-    function renderToday() {
-      var duration = parseInt(filters.duration.value, 10) || 0;
-      var rooms = [];
-      Object.keys(groups).forEach(function (room) {
-        var bookings = groups[room];
-        var info = infoFor(bookings);
-        if (!matchesPlace(room, info)) return;
-        var windows = bookings.filter(function (row) {
-          return isFreeAccess(row) && row.end_min - row.start_min >= duration;
-        });
-        if (!windows.length) return;
-        rooms.push({ room: room, info: info, bookings: bookings, windows: windows });
-      });
-      rooms.sort(roomSort);
+    function roomDayline(bookings, minute) {
+      var total = lensEnd - lensStart;
+      var segments = bookings.map(function (booking) {
+        var start = clamp(booking.start_min, lensStart, lensEnd);
+        var end = clamp(booking.end_min, lensStart, lensEnd);
+        if (end <= start) return '';
+        var left = ((start - lensStart) / total) * 100;
+        var width = ((end - start) / total) * 100;
+        return '<i class="' + (isFreeAccess(booking) ? 'is-free' : 'is-busy') + '" style="left:' + left + '%;width:' + width + '%"></i>';
+      }).join('');
+      var marker = ((clamp(minute, lensStart, lensEnd) - lensStart) / total) * 100;
+      return '<div class="room-dayline" aria-hidden="true">' + segments + '<b style="left:' + marker + '%"></b></div>';
+    }
 
-      var unbooked = inventory.filter(function (room) {
-        if (room.activities !== 0) return false;
-        return matchesPlace(room.room || '', {
-          block: room.block, floor: room.floor, capacity: parseCapacity(room.description)
-        });
-      }).length;
+    function availabilityCard(item) {
+      var live = scheduleCurrent && queryTracksNow;
+      var value = live ? 'Until ' + esc(item.window.end) : esc(item.window.start) + '–' + esc(item.window.end);
+      var detail = formatDuration(item.window.end_min - queryMinute) + (live ? ' remaining' : ' from selected time');
+      return '<article class="availability-card is-free">' +
+        '<div class="card-topline"><span class="status-pill status-free">Free Access</span></div>' +
+        '<h3>' + esc(item.room) + '</h3>' +
+        '<div class="room-meta">' + roomMeta(item.info) + '</div>' +
+        '<div class="availability-window"><p class="availability-value">' + value + '</p>' +
+        '<p class="availability-detail">' + detail + '</p></div>' +
+        roomDayline(item.bookings, queryMinute) +
+        '<details class="room-details"><summary>Day schedule</summary>' +
+        '<div class="timeline-body">' + buildTimeline(item.bookings).map(timelineSegment).join('') + '</div></details>' +
+        '</article>';
+    }
 
-      var html = '<section class="result-section" aria-labelledby="todayHeading">' +
-        '<div class="section-heading"><div><p class="eyebrow">Confirmed windows only</p>' +
-        '<h2 id="todayHeading">Today\'s Free Access rooms <span>' + rooms.length + '</span></h2></div></div>';
-      if (rooms.length) {
-        html += '<div class="timeline-list">' + rooms.map(function (item) {
-          var windows = item.windows.map(function (window) { return esc(window.start) + '–' + esc(window.end); }).join(', ');
-          return '<details class="timeline-card"><summary><span><strong>' + esc(item.room) + '</strong>' +
-            '<small>' + windows + '</small></span><span class="summary-meta">' + roomMeta(item.info) + '</span></summary>' +
-            '<div class="timeline-body">' + buildTimeline(item.bookings).map(timelineSegment).join('') + '</div></details>';
-        }).join('') + '</div>';
-      } else {
-        html += '<div class="inline-empty"><strong>No matching Free Access rooms found.</strong>' +
-          '<span>Reset the filters or choose another location.</span></div>';
+    function lensSlots() {
+      var slots = [];
+      for (var minute = lensStart; minute <= lensMax; minute += 30) {
+        slots.push({ minute: minute, count: availableAt(minute).length });
       }
-      if (unbooked) {
-        html += '<aside class="information-note"><strong>' + unbooked + ' additional rooms have no bookings.</strong> ' +
-          'They are not listed as available because unallocated rooms may be locked.</aside>';
+      return slots;
+    }
+
+    function renderLens(slots, selectedCount) {
+      var maxCount = Math.max.apply(Math, slots.map(function (slot) { return slot.count; }).concat([1]));
+      var nearest = clamp(Math.round((queryMinute - lensStart) / 30), 0, slots.length - 1);
+      elements.lensBars.style.setProperty('--slot-count', slots.length);
+      elements.lensBars.innerHTML = slots.map(function (slot, index) {
+        var height = slot.count ? Math.max(14, Math.round((slot.count / maxCount) * 100)) : 5;
+        return '<span class="' + (index === nearest ? 'is-selected' : '') + '" style="--bar-height:' + height + '%" title="' +
+          esc(formatMinute(slot.minute)) + ': ' + slot.count + ' rooms"></span>';
+      }).join('');
+      elements.timeRange.min = String(lensStart);
+      elements.timeRange.max = String(lensMax);
+      elements.timeRange.value = String(clamp(Math.round(queryMinute / 30) * 30, lensStart, lensMax));
+      elements.timeRange.setAttribute('aria-valuetext', formatMinute(queryMinute) + ', ' + selectedCount + ' matching rooms');
+      elements.lensAxis.innerHTML = '<span>' + esc(formatMinute(lensStart)) + '</span><span>' +
+        esc(formatMinute(Math.round(((lensStart + lensEnd) / 2) / 30) * 30)) + '</span><span>' + esc(formatMinute(lensEnd)) + '</span>';
+      elements.lensHint.textContent = selectedCount + (selectedCount === 1 ? ' room' : ' rooms') + ' at this time · 30-minute steps';
+      elements.queryLabel.textContent = scheduleCurrent ? (queryTracksNow ? 'Now' : 'At') : 'Reference';
+      elements.queryTime.textContent = formatMinute(queryMinute);
+      elements.nowBtn.disabled = !scheduleCurrent;
+      elements.nowBtn.title = scheduleCurrent ? 'Use current Singapore time' : 'Current-time mode needs today\'s schedule';
+    }
+
+    function renderNow() {
+      if (queryTracksNow) queryMinute = scheduleCurrent ? getNow(opts).minutes : clamp(getNow(opts).minutes, lensStart, lensMax);
+      var matches = availableAt(queryMinute);
+      var slots = lensSlots();
+      renderLens(slots, matches.length);
+      var next = slots.filter(function (slot) { return slot.minute > queryMinute && slot.count > 0; })[0];
+      var eyebrow = (scheduleCurrent ? 'At ' : 'Reference · ') + formatMinute(queryMinute);
+      var html = '<section class="result-section" aria-labelledby="freeAccessHeading">' +
+        '<div class="section-heading"><div><p class="eyebrow">' + esc(eyebrow) + '</p>' +
+        '<h2 id="freeAccessHeading">Free Access <span>' + matches.length + '</span></h2></div></div>';
+      if (matches.length) {
+        html += '<div class="availability-grid">' + matches.map(availabilityCard).join('') + '</div>';
+      } else {
+        html += '<div class="empty-state"><span class="empty-route" aria-hidden="true"></span>' +
+          '<h2>No match at ' + esc(formatMinute(queryMinute)) + '</h2><p>Change a filter or move along the time lens.</p><div class="empty-actions">' +
+          (next ? '<button class="btn primary" type="button" data-action="next" data-minute="' + next.minute + '">Next · ' + esc(formatMinute(next.minute)) + '</button>' : '') +
+          '<button class="btn" type="button" data-action="reset">Clear filters</button></div></div>';
       }
       html += '</section>';
-      elements.meta.textContent = rooms.length + ' rooms with confirmed Free Access today';
+      elements.meta.textContent = matches.length + (matches.length === 1 ? ' room' : ' rooms') +
+        (filters.group.value ? ' · closest capacity fit first' : ' · longest availability first');
       elements.results.innerHTML = html;
-      return { mode: 'today', openNow: null, laterToday: null, visibleCount: rooms.length };
+      var liveCount = scheduleCurrent ? availableAt(getNow(opts).minutes).length : null;
+      return {
+        mode: 'now', openNow: liveCount, laterToday: next ? next.count : 0,
+        visibleCount: matches.length, matchingRooms: matches.length, queryMinute: queryMinute
+      };
     }
 
     function renderSchedule() {
@@ -472,20 +463,20 @@
 
       elements.meta.textContent = rows.length + ' scheduled events';
       elements.results.innerHTML = '<section class="result-section" aria-labelledby="scheduleHeading">' +
-        '<div class="section-heading"><div><p class="eyebrow">All published bookings</p>' +
-        '<h2 id="scheduleHeading">Full schedule <span>' + rows.length + '</span></h2></div></div>' +
+        '<div class="section-heading"><div><p class="eyebrow">Published schedule</p>' +
+        '<h2 id="scheduleHeading">Full timetable <span>' + rows.length + '</span></h2></div></div>' +
         (rows.length ? '<div class="schedule-table-wrap"><table class="schedule-table"><caption class="sr-only">All published SIM campus schedule events matching the selected filters</caption><thead><tr>' +
-          '<th>Start</th><th>End</th><th>Block</th><th>Floor</th><th>Room</th><th>Event</th><th>Status</th>' +
+          '<th>Start</th><th>End</th><th>Block</th><th>Level</th><th>Room</th><th>Event</th><th>Status</th>' +
           '</tr></thead><tbody>' + tableRows + '</tbody></table></div><div class="schedule-cards">' + mobileRows + '</div>' :
-          '<div class="inline-empty"><strong>No matching events found.</strong><span>Reset the filters to see the full schedule.</span></div>') +
+          '<div class="inline-empty"><strong>No matching events found.</strong><span>Reset the filters to see the full timetable.</span></div>') +
         '</section>';
       return { mode: 'schedule', openNow: null, laterToday: null, visibleCount: rows.length };
     }
 
     var requestedMode = opts.mode;
-    if (requestedMode === 'available') requestedMode = 'today';
+    if (requestedMode === 'available' || requestedMode === 'today' || requestedMode === 'finder') requestedMode = 'now';
     if (requestedMode === 'table') requestedMode = 'schedule';
-    var mode = /^(now|today|schedule)$/.test(requestedMode) ? requestedMode : 'now';
+    var mode = /^(now|schedule)$/.test(requestedMode) ? requestedMode : 'now';
 
     function updateModeControls() {
       modeButtons.forEach(function (button) {
@@ -499,15 +490,15 @@
 
     function render() {
       updateModeControls();
-      var summary = mode === 'now' ? renderNow() : (mode === 'today' ? renderToday() : renderSchedule());
+      var summary = mode === 'now' ? renderNow() : renderSchedule();
       if (typeof opts.onSummary === 'function') opts.onSummary(summary);
       return summary;
     }
 
     function setMode(nextMode) {
-      if (nextMode === 'available') nextMode = 'today';
+      if (nextMode === 'available' || nextMode === 'today' || nextMode === 'finder') nextMode = 'now';
       if (nextMode === 'table') nextMode = 'schedule';
-      if (!/^(now|today|schedule)$/.test(nextMode)) return;
+      if (!/^(now|schedule)$/.test(nextMode)) return;
       mode = nextMode;
       render();
       if (typeof opts.onModeChange === 'function') opts.onModeChange(mode);
@@ -515,14 +506,49 @@
 
     modeButtons.forEach(function (button) {
       button.addEventListener('click', function () { setMode(button.getAttribute('data-mode')); });
+      button.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        var buttons = Array.prototype.slice.call(modeButtons);
+        var offset = event.key === 'ArrowRight' ? 1 : -1;
+        var next = buttons[(buttons.indexOf(button) + offset + buttons.length) % buttons.length];
+        next.focus();
+        setMode(next.getAttribute('data-mode'));
+      });
     });
     elements.resetBtn.addEventListener('click', function () {
       Object.keys(filters).forEach(function (key) { filters[key].value = key === 'duration' ? '0' : ''; });
+      queryTracksNow = scheduleCurrent;
+      queryMinute = scheduleCurrent ? getNow(opts).minutes : clamp(getNow(opts).minutes, lensStart, lensMax);
       render();
     });
-    root.querySelectorAll('input, select').forEach(function (input) {
+    root.querySelectorAll('input[data-f], select[data-f]').forEach(function (input) {
       input.addEventListener('input', render);
       input.addEventListener('change', render);
+    });
+    elements.timeRange.addEventListener('input', function () {
+      queryTracksNow = false;
+      queryMinute = clamp(parseInt(elements.timeRange.value, 10) || lensStart, lensStart, lensMax);
+      render();
+    });
+    elements.nowBtn.addEventListener('click', function () {
+      if (!scheduleCurrent) return;
+      queryTracksNow = true;
+      queryMinute = clamp(getNow(opts).minutes, lensStart, lensMax);
+      render();
+    });
+    elements.results.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-action]');
+      if (!button) return;
+      if (button.getAttribute('data-action') === 'next') {
+        queryTracksNow = false;
+        queryMinute = clamp(parseInt(button.getAttribute('data-minute'), 10), lensStart, lensMax);
+        render();
+        root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } else if (button.getAttribute('data-action') === 'reset') {
+        Object.keys(filters).forEach(function (key) { filters[key].value = key === 'duration' ? '0' : ''; });
+        render();
+      }
     });
 
     render();
@@ -530,10 +556,19 @@
     return {
       render: render,
       setMode: setMode,
+      setQueryMinute: function (minute) {
+        queryTracksNow = minute === null || minute === 'now';
+        queryMinute = queryTracksNow && scheduleCurrent
+          ? getNow(opts).minutes
+          : clamp(queryTracksNow ? getNow(opts).minutes : Number(minute), lensStart, lensMax);
+        return render();
+      },
       getData: function () { return data; },
       getState: function () {
         var state = {};
         Object.keys(filters).forEach(function (key) { state[key] = filters[key].value; });
+        state.queryMinute = queryMinute;
+        state.queryTracksNow = queryTracksNow;
         return state;
       },
       getMode: function () { return mode; }
@@ -541,15 +576,9 @@
   }
 
   global.SIMTimetable = {
-    toMinutes: toMinutes,
-    parseTimeRange: parseTimeRange,
-    parseBlock: parseBlock,
-    parseFloor: parseFloor,
-    parseCapacity: parseCapacity,
-    normalize: normalize,
-    buildTimeline: buildTimeline,
-    singaporeClock: singaporeClock,
-    escapeHtml: esc,
-    mount: mount
+    toMinutes: toMinutes, parseTimeRange: parseTimeRange, parseBlock: parseBlock,
+    parseFloor: parseFloor, parseCapacity: parseCapacity, normalize: normalize,
+    buildTimeline: buildTimeline, singaporeClock: singaporeClock,
+    formatMinute: formatMinute, escapeHtml: esc, mount: mount
   };
 })(typeof window !== 'undefined' ? window : this);

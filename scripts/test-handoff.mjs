@@ -113,7 +113,7 @@ const OPENER_SCRIPT = `(async () => {
     importPanelHidden: d.getElementById('importPanel').hidden,
     appHidden: d.getElementById('app').hidden,
     header: d.getElementById('updatedValue').textContent,
-    rooms: d.querySelectorAll('.availability-card.is-open').length,
+    rooms: d.querySelectorAll('.availability-card.is-free').length,
     heading: d.querySelector('h1') && d.querySelector('h1').textContent,
     persisted: !!win.localStorage.getItem('sim-timetable-payload'),
   };
@@ -204,8 +204,8 @@ try {
   check('waiting panel hidden after delivery', r.waitingPanelHidden === true);
   check('import panel stays hidden', r.importPanelHidden === true);
   check('timetable is showing', r.appHidden === false);
-  check('rendered confirmed open sample rooms', r.rooms === 2, `${r.rooms} rooms`);
-  check('student-first heading is present', /Find a room/.test(r.heading), JSON.stringify(r.heading));
+  check('rendered Free Access sample rooms', r.rooms === 2, `${r.rooms} rooms`);
+  check('student-first heading is present', /Find a Free Access room/.test(r.heading), JSON.stringify(r.heading));
   check('persisted to localStorage', r.persisted === true);
   check('query string cleaned from URL', !r.viewerUrl.includes('awaiting'), r.viewerUrl);
   check('header shows freshness', /just now|min ago/.test(r.header), JSON.stringify(r.header));

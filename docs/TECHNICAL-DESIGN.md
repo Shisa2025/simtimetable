@@ -202,8 +202,11 @@ SIMTimetable.mount(rootElement, rows, { mode, initial }) → controller
 - Injects its own toolbar and result container; the host page supplies only an empty element.
 - Elements are addressed via `data-f` (filters) and `data-el` (chrome) attributes scoped to
   `root`, **not** by global `getElementById` — so two instances on one page would not collide.
-- Returns `{ render, getData, getState, getMode }`. `getState`/`getMode` exist so the export can
-  capture the user's current view (§5).
+- `initial.queryMinute` restores a selected time; `initial.queryTracksNow` restores live-time tracking.
+- Returns `{ render, setMode, setQueryMinute, getData, getState, getMode }`. `getState` captures
+  filters and the time-lens state so the export can restore the current view (§5).
+- `today`/`available` remain accepted mode aliases for the Free Access finder, while `table`
+  remains an alias for the full timetable.
 - **Does no I/O.** No fetch, no storage. This is what lets it be inlined into the export unchanged.
 
 ## 5. Standalone export

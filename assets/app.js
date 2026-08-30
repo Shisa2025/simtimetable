@@ -3,8 +3,8 @@
 
   var STORAGE_KEY = 'sim-timetable-payload';
   var FEED_URL = 'https://raw.githubusercontent.com/Shisa2025/simtimetable/main/data/latest.json';
-  var HASHES = { now: 'open-now', today: 'today', schedule: 'schedule' };
-  var MODES = { 'open-now': 'now', today: 'today', schedule: 'schedule' };
+  var HASHES = { now: 'free-access', schedule: 'schedule' };
+  var MODES = { 'free-access': 'now', 'open-now': 'now', today: 'now', available: 'now', schedule: 'schedule' };
 
   var app = document.getElementById('app');
   var loadingPanel = document.getElementById('loadingPanel');
@@ -18,12 +18,9 @@
   var exportStatus = document.getElementById('exportStatus');
   var updatedValue = document.getElementById('updatedValue');
   var updatedDetail = document.getElementById('updatedDetail');
-  var openValue = document.getElementById('openValue');
-  var laterValue = document.getElementById('laterValue');
   var dateValue = document.getElementById('dateValue');
   var dateDetail = document.getElementById('dateDetail');
-  var clockTime = document.getElementById('sgTime');
-  var clockDate = document.getElementById('sgDate');
+  var workspaceMeta = document.getElementById('workspaceMeta');
 
   var controller = null;
   var payload = null;
@@ -86,39 +83,12 @@
     }).format(date);
   }
 
-  function updateClock() {
-    var now = new Date();
-    clockTime.textContent = new Intl.DateTimeFormat('en-SG', {
-      timeZone: 'Asia/Singapore', hour: 'numeric', minute: '2-digit'
-    }).format(now);
-    clockDate.textContent = new Intl.DateTimeFormat('en-SG', {
-      timeZone: 'Asia/Singapore', weekday: 'long', day: 'numeric', month: 'long'
-    }).format(now);
-  }
-
   function setActiveNavigation(mode) {
     document.querySelectorAll('[data-view-link]').forEach(function (link) {
       var active = link.getAttribute('data-view-link') === mode;
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-  }
-
-  function onSummary(summary) {
-    if (summary.mode === 'now') {
-      openValue.textContent = String(summary.openNow);
-      laterValue.textContent = String(summary.laterToday);
-    } else if (payload) {
-      var now = SIMTimetable.singaporeClock(new Date()).minutes;
-      var current = payload.rows.filter(function (row) {
-        return /free access/i.test(row.event || '') && row.start_min <= now && now < row.end_min;
-      }).length;
-      var later = payload.rows.filter(function (row) {
-        return /free access/i.test(row.event || '') && row.start_min > now;
-      }).length;
-      openValue.textContent = scheduleIsCurrent(payload) ? String(current) : '—';
-      laterValue.textContent = scheduleIsCurrent(payload) ? String(later) : '—';
-    }
   }
 
   function show(value, persist) {
@@ -149,19 +119,23 @@
       initial: currentState,
       rooms: value.rooms || [],
       scheduleCurrent: current,
-      onSummary: onSummary,
+      scheduleDates: value.schedule_dates || [],
       onModeChange: function (mode) {
         setActiveNavigation(mode);
         history.replaceState(null, '', '/#' + HASHES[mode]);
       }
     });
     setActiveNavigation(requestedMode);
+    if (requestedMode === 'now' && location.hash !== '#free-access') {
+      history.replaceState(null, '', '/#free-access');
+    }
 
     awaiting = false;
     loadingPanel.hidden = true;
     waitingPanel.hidden = true;
     importPanel.hidden = true;
     app.hidden = false;
+    workspaceMeta.hidden = false;
     importError.textContent = '';
   }
 
@@ -199,12 +173,14 @@
   });
   document.getElementById('showImportBtn').addEventListener('click', function () {
     app.hidden = true;
+    workspaceMeta.hidden = true;
     importPanel.hidden = false;
     importPanel.scrollIntoView({ block: 'start' });
   });
   document.getElementById('cancelImportBtn').addEventListener('click', function () {
     importPanel.hidden = true;
     app.hidden = !payload;
+    workspaceMeta.hidden = !payload;
   });
 
   var drop = document.getElementById('drop');
@@ -242,9 +218,9 @@
       }).replace(/</g, '\\u003c');
       var html = '<!DOCTYPE html>\n<html lang="en-SG">\n<head>\n' +
         '<meta charset="utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1" />\n' +
-        '<title>SIM Campus Timetable — Offline copy</title>\n<style>\n' + parts[0] + '\n</style>\n</head>\n<body>\n' +
+        '<title>SIM Timetable — Offline copy</title>\n<style>\n' + parts[0] + '\n</style>\n</head>\n<body>\n' +
         '<main class="page-shell"><section class="content-hero"><p class="eyebrow">Offline copy</p>' +
-        '<h1>SIM Campus Timetable</h1><p>Saved from the student room finder. Times use Singapore time.</p></section>' +
+        '<h1>SIM Timetable</h1><p>Saved from the Free Access finder. Times use Singapore time.</p></section>' +
         '<div id="timetable"></div></main>\n<script>\n' + parts[1] + '\n<\/script>\n<script>\n' +
         'var rows=' + rows + ';var options=' + exportOptions + ';' +
         'options.scheduleCurrent=options.scheduleDates.indexOf(SIMTimetable.singaporeClock(new Date()).date)!==-1;' +
@@ -267,6 +243,7 @@
     waitingPanel.hidden = false;
     importPanel.hidden = true;
     app.hidden = true;
+    workspaceMeta.hidden = true;
   }
 
   document.getElementById('waitingCancel').addEventListener('click', function () {
@@ -292,7 +269,7 @@
         tone: 'success', ttl: 5000
       });
       try { event.source.postMessage({ type: 'sim-timetable:received' }, event.origin); } catch (error) { /* best effort */ }
-      history.replaceState(null, '', '/#open-now');
+      history.replaceState(null, '', '/#free-access');
     } catch (error) {
       awaiting = false;
       waitingPanel.hidden = true;
@@ -329,9 +306,6 @@
         });
       });
   }
-
-  updateClock();
-  setInterval(updateClock, 30000);
 
   var params = new URLSearchParams(location.search);
   if (params.get('awaiting') === '1' && window.opener) {
