@@ -3,6 +3,7 @@
 
   var STORAGE_KEY = 'sim-timetable-payload';
   var FEED_URL = 'https://raw.githubusercontent.com/Shisa2025/simtimetable/main/data/latest.json';
+  var ROOM_PATH = '/rooms';
   var HASHES = { now: 'free-access', schedule: 'schedule' };
   var MODES = { 'free-access': 'now', 'open-now': 'now', today: 'now', available: 'now', schedule: 'schedule' };
 
@@ -122,12 +123,12 @@
       scheduleDates: value.schedule_dates || [],
       onModeChange: function (mode) {
         setActiveNavigation(mode);
-        history.replaceState(null, '', '/#' + HASHES[mode]);
+        history.replaceState(null, '', ROOM_PATH + '#' + HASHES[mode]);
       }
     });
     setActiveNavigation(requestedMode);
     if (requestedMode === 'now' && location.hash !== '#free-access') {
-      history.replaceState(null, '', '/#free-access');
+      history.replaceState(null, '', ROOM_PATH + '#free-access');
     }
 
     awaiting = false;
@@ -142,7 +143,7 @@
   function load(raw) {
     try {
       show(coerce(raw), true);
-      history.replaceState(null, '', '/#' + HASHES[controller.getMode()]);
+      history.replaceState(null, '', ROOM_PATH + '#' + HASHES[controller.getMode()]);
     } catch (error) {
       importError.textContent = 'Could not read that schedule: ' + error.message;
     }
@@ -218,9 +219,9 @@
       }).replace(/</g, '\\u003c');
       var html = '<!DOCTYPE html>\n<html lang="en-SG">\n<head>\n' +
         '<meta charset="utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1" />\n' +
-        '<title>SIM Timetable — Offline copy</title>\n<style>\n' + parts[0] + '\n</style>\n</head>\n<body>\n' +
+        '<title>SIM Campus Assistant — Offline room finder</title>\n<style>\n' + parts[0] + '\n</style>\n</head>\n<body>\n' +
         '<main class="page-shell"><section class="content-hero"><p class="eyebrow">Offline copy</p>' +
-        '<h1>SIM Timetable</h1><p>Saved from the Free Access finder. Times use Singapore time.</p></section>' +
+        '<h1>SIM Campus Assistant</h1><p>Saved from the Free Access finder. Times use Singapore time.</p></section>' +
         '<div id="timetable"></div></main>\n<script>\n' + parts[1] + '\n<\/script>\n<script>\n' +
         'var rows=' + rows + ';var options=' + exportOptions + ';' +
         'options.scheduleCurrent=options.scheduleDates.indexOf(SIMTimetable.singaporeClock(new Date()).date)!==-1;' +
@@ -269,7 +270,7 @@
         tone: 'success', ttl: 5000
       });
       try { event.source.postMessage({ type: 'sim-timetable:received' }, event.origin); } catch (error) { /* best effort */ }
-      history.replaceState(null, '', '/#free-access');
+      history.replaceState(null, '', ROOM_PATH + '#free-access');
     } catch (error) {
       awaiting = false;
       waitingPanel.hidden = true;

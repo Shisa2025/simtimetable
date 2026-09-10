@@ -21,7 +21,7 @@
     try {
       var payload = validate(raw);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      location.href = '/#free-access';
+      location.href = '/rooms#free-access';
     } catch (error) {
       document.getElementById('advancedImportError').textContent = 'Could not load that file: ' + error.message;
     }

@@ -1,5 +1,5 @@
 // ============================================================================
-// SIM Campus Timetable — grab today's schedule
+// SIM Campus Assistant — grab today's public room schedule
 //
 // Run this on https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM
 //
@@ -59,7 +59,7 @@
   let viewerWin = null;
   if (!HEADLESS) {
     try {
-      viewerWin = window.open(VIEWER_ORIGIN + '/?awaiting=1', 'simTimetableViewer');
+      viewerWin = window.open(VIEWER_ORIGIN + '/rooms?awaiting=1', 'simTimetableViewer');
     } catch (err) {
       viewerWin = null;
     }

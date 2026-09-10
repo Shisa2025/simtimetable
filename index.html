@@ -4,139 +4,185 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script>(function(){try{var t=localStorage.getItem('sim-timetable-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858" crossorigin="anonymous"></script>
-<title>SIM Timetable — Find Free Access Rooms by Time</title>
-<meta name="description" content="Choose a time and find SIM campus rooms marked Free Access." />
+<title>SIM Campus Assistant — Today and Week</title>
+<meta name="description" content="See your next class, plan the gap, and find confirmed Free Access rooms at SIM." />
 <meta name="theme-color" content="#132019" />
 <link rel="canonical" href="https://simtimetable.vercel.app/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="SIM Timetable" />
-<meta property="og:description" content="Choose a time. Find a Free Access room." />
+<meta property="og:title" content="SIM Campus Assistant" />
+<meta property="og:description" content="Your next class and a confirmed place to study before it." />
 <meta property="og:url" content="https://simtimetable.vercel.app/" />
 <meta property="og:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
 <meta property="og:image:width" content="1734" />
 <meta property="og:image:height" content="907" />
 <meta property="og:image:alt" content="SIM Timetable — Find a Free Access room." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="SIM Timetable" />
-<meta name="twitter:description" content="Choose a time. Find a Free Access room." />
 <meta name="twitter:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
 <link rel="stylesheet" href="/assets/styles.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%23132019%22/><path d=%22M18 67h64M28 49h44M39 31h22%22 stroke=%22%236CDEA5%22 stroke-width=%2210%22 stroke-linecap=%22round%22/></svg>" />
 </head>
-<body>
-<a class="skip-link" href="#main">Skip to room finder</a>
-
+<body class="assistant-page">
+<a class="skip-link" href="#main">Skip to today</a>
 <header class="site-header">
   <div class="site-header-inner">
-    <a class="brand" href="/" aria-label="SIM Timetable home">
+    <a class="brand" href="/" aria-label="SIM Campus Assistant home">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span class="brand-copy">
-        <strong>SIM Timetable</strong>
-        <small>Free Access rooms</small>
-      </span>
+      <span class="brand-copy"><strong>SIM Campus Assistant</strong><small>Independent student tool</small></span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <a href="/#free-access" data-view-link="now">Free Access</a>
-      <a href="/#schedule" data-view-link="schedule">Timetable</a>
+      <a href="/#today" data-assistant-link="today" aria-current="page">Today</a>
+      <a href="/#week" data-assistant-link="week">Week</a>
+      <a href="/rooms#free-access">Find a room</a>
       <a href="/about">About</a>
     </nav>
-    <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme.">
-      <span class="theme-toggle-icon" aria-hidden="true">◐</span>
-    </button>
+    <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme."><span class="theme-toggle-icon" aria-hidden="true">◐</span></button>
   </div>
 </header>
 
-<main class="page-shell app-shell" id="main">
-  <section class="workspace-intro" aria-labelledby="pageTitle">
+<main class="page-shell assistant-shell" id="main">
+  <section class="assistant-heading" aria-labelledby="assistantTitle">
     <div>
-      <p class="eyebrow">SIM campus · Singapore</p>
-      <h1 id="pageTitle">Find a Free Access room.</h1>
-      <p>Pick a time, then narrow it down.</p>
+      <p class="eyebrow" id="assistantDate">Today · Singapore</p>
+      <h1 id="assistantTitle">Plan the next move.</h1>
     </div>
-    <div class="workspace-meta" id="workspaceMeta" hidden>
-      <div class="data-stamp">
-        <span>Schedule</span>
-        <strong id="dateValue">—</strong>
-        <small id="dateDetail">Loading…</small>
-      </div>
-      <div class="data-stamp">
-        <span>Updated</span>
-        <strong id="updatedValue">—</strong>
-        <small id="updatedDetail">Checking…</small>
-      </div>
-      <details class="data-menu">
-        <summary>Data</summary>
-        <div class="data-menu-panel">
-          <button type="button" id="exportBtn">Download offline copy</button>
-          <button type="button" id="showImportBtn">Load my own data</button>
-          <a href="/advanced">Advanced refresh tools</a>
-          <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
-          <span class="action-status" id="exportStatus" role="status"></span>
+    <div class="assistant-actions">
+      <button class="btn" type="button" data-open-setup>Add timetable</button>
+      <a class="btn primary" href="/rooms#free-access">Find a room</a>
+    </div>
+  </section>
+
+  <nav class="assistant-tabs" aria-label="Assistant views">
+    <a href="#today" data-assistant-link="today" aria-current="page">Today</a>
+    <a href="#week" data-assistant-link="week">This week</a>
+  </nav>
+
+  <section id="todayView" data-assistant-view="today">
+    <div class="assistant-dashboard">
+      <article class="assistant-focus card">
+        <div class="focus-status"><span class="live-dot" aria-hidden="true"></span><span>Ready when your timetable is</span></div>
+        <p class="eyebrow">Next class</p>
+        <h2>Add your class timetable</h2>
+        <p class="focus-copy">Import an ICS calendar or add classes manually. Your selections stay in this browser.</p>
+        <div class="focus-actions">
+          <button class="btn primary" type="button" data-open-setup>Set up timetable</button>
+          <a class="text-link" href="/rooms#free-access">Continue without a timetable</a>
         </div>
-      </details>
+      </article>
+
+      <aside class="assistant-side card" aria-label="Campus schedule status">
+        <p class="eyebrow">Campus rooms</p>
+        <h2>Checking today’s Free Access windows</h2>
+        <p class="note">Room suggestions only use access windows explicitly published by SIM.</p>
+        <div class="assistant-data-status" id="campusDataStatus" role="status">Loading the latest snapshot…</div>
+      </aside>
+    </div>
+
+    <section class="assistant-section" aria-labelledby="todayAgendaHeading">
+      <div class="section-heading"><div><p class="eyebrow">Your day</p><h2 id="todayAgendaHeading">Today’s agenda</h2></div></div>
+      <div class="agenda-empty card">
+        <span class="agenda-time">—</span>
+        <div><strong>No personal classes saved yet</strong><p>Once added, classes and study-room suggestions will appear here.</p></div>
+      </div>
+    </section>
+  </section>
+
+  <section id="weekView" data-assistant-view="week" hidden>
+    <div class="week-empty card">
+      <p class="eyebrow">This week</p>
+      <h2>Your seven-day timetable will live here.</h2>
+      <p>Add an ICS file or create a repeating class to see Monday through Sunday.</p>
+      <button class="btn primary" type="button" data-open-setup>Set up timetable</button>
     </div>
   </section>
 
-  <aside class="alert" id="staleBanner" role="alert" hidden>
-    <span aria-hidden="true">⚠</span>
-    <div><strong>Previous schedule</strong><p id="staleText">This snapshot is not for today in Singapore.</p></div>
-  </aside>
-
-  <section class="waiting-panel card" id="waitingPanel" aria-live="polite" hidden>
-    <div class="loading-state">
-      <div class="spinner" aria-hidden="true"></div>
-      <div><h2 id="waitStep">Waiting for the fresh schedule</h2><p id="waitDetail">Keep this tab open while the SIM scheduling page sends the data.</p></div>
-      <button class="btn" id="waitingCancel" type="button">Load a file instead</button>
+  <section class="assistant-section quick-links" aria-labelledby="campusLinksHeading">
+    <div class="section-heading"><div><p class="eyebrow">Shortcuts</p><h2 id="campusLinksHeading">Campus links</h2></div></div>
+    <div class="quick-link-grid">
+      <a class="quick-link" href="https://www.sim.edu.sg/learners-login"><strong>Learners’ login</strong><span>SIMConnect, Canvas and SIM Online</span></a>
+      <a class="quick-link" href="https://library.sim.edu.sg/"><strong>SIM Library</strong><span>Search resources and library services</span></a>
+      <a class="quick-link" href="https://www.sim.edu.sg/degrees-diplomas/life-at-sim/campus-facilities"><strong>Campus facilities</strong><span>Find services by block and level</span></a>
     </div>
-  </section>
-
-  <section class="card" id="loadingPanel" aria-live="polite">
-    <div class="loading-state">
-      <div class="spinner" aria-hidden="true"></div>
-      <div><h2>Getting today’s timetable</h2><p>Checking the latest published SIM schedule.</p></div>
-    </div>
-  </section>
-
-  <section class="import-panel card" id="importPanel" aria-labelledby="importHeading" hidden>
-    <p class="eyebrow">Fallback option</p>
-    <h2 id="importHeading">Load a saved schedule</h2>
-    <p class="note">Use this only when the daily snapshot is unavailable. Your file stays in this browser.</p>
-    <div class="drop" id="drop">
-      <strong>Drop sim-timetable.json here</strong><br />
-      <span class="note">or <button class="btn" id="pickBtn" type="button">Choose a file</button></span>
-      <input type="file" id="file" accept="application/json,.json" hidden />
-    </div>
-    <label for="pasteArea" class="note">Or paste schedule JSON:</label>
-    <textarea class="paste" id="pasteArea" placeholder="Paste JSON here"></textarea>
-    <div class="row">
-      <button class="btn primary" id="loadPasteBtn" type="button">Load schedule</button>
-      <button class="btn" id="cancelImportBtn" type="button">Cancel</button>
-      <span class="err" id="importError" role="alert"></span>
-    </div>
-  </section>
-
-  <section id="app" hidden>
-    <div id="timetable"></div>
   </section>
 </main>
 
+<dialog class="assistant-dialog" id="setupDialog" aria-labelledby="setupTitle">
+  <div class="dialog-head">
+    <div><p class="eyebrow">Local timetable</p><h2 id="setupTitle">Set up your week</h2></div>
+    <button class="dialog-close" id="closeSetup" type="button" aria-label="Close timetable setup">×</button>
+  </div>
+  <nav class="setup-tabs" role="tablist" aria-label="Timetable setup options">
+    <button type="button" role="tab" data-setup-tab="import" aria-selected="true">Import ICS</button>
+    <button type="button" role="tab" data-setup-tab="manual" aria-selected="false">Add manually</button>
+    <button type="button" role="tab" data-setup-tab="data" aria-selected="false">Settings &amp; data</button>
+  </nav>
+
+  <section class="setup-panel" data-setup-panel="import">
+    <h3>Choose classes from a calendar</h3>
+    <p class="note">The file is read on this device. All-day items and events you do not select are discarded.</p>
+    <label class="file-drop" for="icsFile">
+      <strong>Choose an ICS calendar</strong>
+      <span>Exported from Canvas, Outlook, Apple Calendar or another calendar app</span>
+      <input id="icsFile" type="file" accept="text/calendar,.ics" />
+    </label>
+    <div class="import-summary" id="importSummary" hidden></div>
+    <div class="class-picker" id="classPicker"></div>
+    <div class="dialog-actions" id="importActions" hidden>
+      <button class="btn primary" id="saveImportedClasses" type="button">Save selected classes</button>
+      <button class="btn" id="selectAllClasses" type="button">Select all</button>
+    </div>
+  </section>
+
+  <section class="setup-panel" data-setup-panel="manual" hidden>
+    <form id="manualClassForm">
+      <h3>Add a class</h3>
+      <div class="form-grid">
+        <label class="field field-wide"><span>Class name</span><input name="title" required maxlength="160" placeholder="e.g. BME109 · Tutorial" /></label>
+        <label class="field"><span>Starts</span><input name="startTime" type="time" required /></label>
+        <label class="field"><span>Ends</span><input name="endTime" type="time" required /></label>
+        <label class="field"><span>From</span><input name="validFrom" type="date" required /></label>
+        <label class="field"><span>Until</span><input name="validUntil" type="date" required /></label>
+        <label class="field field-wide"><span>Room or location</span><input name="room" list="roomOptions" maxlength="100" placeholder="e.g. SR.C.3.12" /></label>
+      </div>
+      <fieldset class="weekday-fieldset">
+        <legend>Repeats on</legend>
+        <div class="weekday-choices">
+          <label><input type="checkbox" name="days" value="1" /> Mon</label>
+          <label><input type="checkbox" name="days" value="2" /> Tue</label>
+          <label><input type="checkbox" name="days" value="3" /> Wed</label>
+          <label><input type="checkbox" name="days" value="4" /> Thu</label>
+          <label><input type="checkbox" name="days" value="5" /> Fri</label>
+          <label><input type="checkbox" name="days" value="6" /> Sat</label>
+          <label><input type="checkbox" name="days" value="0" /> Sun</label>
+        </div>
+      </fieldset>
+      <div class="dialog-actions"><button class="btn primary" type="submit">Add class</button></div>
+    </form>
+    <div class="saved-series" id="manualSeriesList"></div>
+  </section>
+
+  <section class="setup-panel" data-setup-panel="data" hidden>
+    <h3>Room recommendation settings</h3>
+    <div class="form-grid">
+      <label class="field"><span>Travel buffer</span><select id="travelBuffer"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option></select></label>
+      <label class="field"><span>Usual group size</span><select id="groupSize"><option value="">Any size</option><option value="2">2 people</option><option value="4">4 people</option><option value="10">10 people</option><option value="20">20 people</option><option value="40">40 people</option><option value="60">60 people</option></select></label>
+    </div>
+    <div class="data-tools">
+      <article><strong>Backup</strong><p>Download a portable JSON copy of your selected and manually added classes.</p><button class="btn" id="exportProfile" type="button">Export assistant data</button></article>
+      <article><strong>Restore</strong><p>Replace this browser’s assistant data with a previously exported copy.</p><label class="btn" for="backupFile">Import backup</label><input id="backupFile" type="file" accept="application/json,.json" hidden /></article>
+      <article class="danger-zone"><strong>Clear personal timetable</strong><p>Remove imported and manually added classes from this browser.</p><button class="btn" id="clearProfile" type="button">Clear timetable</button></article>
+    </div>
+  </section>
+  <p class="dialog-message" id="assistantMessage" role="status" aria-live="polite"></p>
+</dialog>
+<datalist id="roomOptions"></datalist>
+
 <footer class="site-footer">
   <div class="site-footer-inner">
-    <p><strong>Independent student tool.</strong> Not affiliated with or endorsed by Singapore Institute of Management. Schedule data comes from SIM’s public scheduling service.</p>
-    <nav class="footer-links" aria-label="Footer navigation">
-      <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
-      <a href="/about">About</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/advanced">Advanced tools</a>
-      <a href="https://github.com/Shisa2025/simtimetable/issues">Feedback</a>
-    </nav>
+    <p><strong>Independent student tool.</strong> Not affiliated with or endorsed by Singapore Institute of Management.</p>
+    <nav class="footer-links" aria-label="Footer navigation"><a href="/rooms#free-access">Find a room</a><a href="/privacy">Privacy</a><a href="/advanced">Advanced tools</a><a href="https://github.com/Shisa2025/simtimetable/issues">Feedback</a></nav>
   </div>
 </footer>
-
-<script src="/assets/toast.js"></script>
-<script src="/assets/timetable.js"></script>
 <script src="/assets/site.js"></script>
-<script src="/assets/app.js"></script>
+<script type="module" src="/assets/assistant.js"></script>
 </body>
 </html>

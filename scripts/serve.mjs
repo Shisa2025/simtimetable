@@ -61,5 +61,5 @@ createServer(async (req, res) => {
   res.end(await readFile(file));
   console.log(`200 ${pathname}`);
 }).listen(PORT, () => {
-  console.log(`SIM timetable dev server → http://localhost:${PORT}`);
+  console.log(`SIM Campus Assistant dev server → http://localhost:${PORT}`);
 });

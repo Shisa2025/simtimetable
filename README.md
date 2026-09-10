@@ -1,8 +1,8 @@
-# SIM Campus Timetable
+# SIM Campus Assistant
 
-An independent student tool for finding SIM campus rooms that are explicitly marked
-**Free Access**. Choose a time, see how availability changes through the day, and browse the
-full published schedule without claiming that unallocated rooms are available.
+An independent, local-first student tool for planning a day at SIM. Add a personal class
+timetable from an ICS file or by hand, see the next class and weekly agenda, and get study-room
+suggestions drawn only from campus windows explicitly marked **Free Access**.
 
 | | |
 | --- | --- |
@@ -15,6 +15,12 @@ Management (SIM).
 
 ## Student experience
 
+- **Today** — current and next class, countdown, room details, and the gap before the next lesson.
+- **Week** — a seven-day timetable that includes weekend classes.
+- **Study suggestions** — up to three confirmed Free Access rooms that cover the gap, with the
+  next class's block ranked first and a configurable travel buffer.
+- **Local timetable** — choose class series from a local ICS file or add repeating classes by hand;
+  export, restore, or clear the saved profile at any time.
 - **Time lens** — move through the day in 30-minute steps and see matching room counts at a glance.
 - **Free Access results** — rooms available at the selected time, sorted by capacity fit and remaining duration.
 - **Day schedule** — each result expands to its Free Access, busy, and unknown timeline.
@@ -29,8 +35,9 @@ tutor rooms, and other spaces, so those periods are labelled **Unknown / may be 
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Time-lens Free Access room finder |
-| `/viewer` | Backwards-compatible redirect to the room finder |
+| `/` | Ad-free personal Today and Week workspace |
+| `/rooms` | Time-lens Free Access finder and full published timetable |
+| `/viewer` | Backwards-compatible redirect to `/rooms` |
 | `/advanced` | Bookmarklet, scraper, and JSON import tools |
 | `/about` | Data source, definitions, and limitations |
 | `/privacy` | Local storage, hosting, and advertising disclosures |
@@ -49,7 +56,9 @@ The endpoint is same-origin and protected by a WAF that rejects ordinary HTTP cl
 shared scraper therefore runs in a real Chromium browser. GitHub Actions runs it shortly after
 midnight Singapore time and commits `data/latest.json`. The website reads the published file
 from `Shisa2025/simtimetable` and keeps the last successful snapshot in browser local storage as
-an offline fallback.
+an offline fallback. The personal assistant profile is stored separately in
+`localStorage['sim-campus-assistant-profile-v1']`; no account or application server receives the
+selected classes.
 
 The bookmarklet on `/advanced` can obtain a newer mid-day snapshot. It opens the room finder,
 passes the data directly between the two browser tabs using `postMessage`, and requires an
@@ -57,7 +66,8 @@ acknowledgement from the tab it opened. If that handoff fails, it downloads JSON
 
 ## Developing
 
-There are no dependencies and no build step.
+There is no build step. ICAL.js 2.2.1 is vendored under `assets/vendor` so calendar imports do not
+depend on a CDN or another runtime service.
 
 ```bash
 node scripts/serve.mjs
@@ -76,6 +86,8 @@ Run the browser-based checks with the local server running:
 ```bash
 node scripts/test-ui.mjs
 node scripts/test-handoff.mjs
+node scripts/test-assistant-data.mjs
+node scripts/test-assistant-ui.mjs
 ```
 
 ## Daily publishing and deployment
@@ -91,9 +103,12 @@ workflow manually once after setting up a new repository.
 ## Project layout
 
 ```text
-index.html                  student room finder
+index.html                  local-first Today and Week workspace
+rooms.html                  public room finder and full timetable
 advanced.html               refresh and import tools
 about.html / privacy.html   trust and privacy content
+assets/assistant-data.js    ICS parsing, profile model, week and room recommendation logic
+assets/assistant.js         Today/Week rendering, local import, manual classes and backup tools
 assets/app.js               feed, cache, import, export, and handoff orchestration
 assets/timetable.js         parsing, Singapore-time logic, filters, and rendering
 assets/styles.css           responsive light/dark visual system

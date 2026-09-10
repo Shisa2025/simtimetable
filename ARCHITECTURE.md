@@ -10,8 +10,8 @@ For implementation depth — data contracts, algorithms, failure modes — see
 
 ## The one-sentence version
 
-A GitHub Action reads SIM's own campus API once a day and commits the result to this repo; the
-static viewer fetches that file and renders it as a per-room open/busy/gap timeline.
+A GitHub Action publishes SIM's campus room snapshot once a day; the static site combines that
+public feed with a device-local class timetable to power Today, Week, and the existing room finder.
 
 ## System diagram
 
@@ -32,7 +32,8 @@ flowchart LR
     end
 
     subgraph browser["🧑 The reader's browser"]
-        VIEW["index.html<br/><i>student room finder</i>"]
+        VIEW["rooms.html<br/><i>student room finder</i>"]
+        ASSIST["index.html<br/><i>Today / Week assistant</i>"]
         LS[("localStorage")]
         EXP["timetable.html<br/><i>self-contained export</i>"]
     end
@@ -45,10 +46,12 @@ flowchart LR
     CI -->|"one request"| API
     CI -->|"commit + push"| DATA
     DATA -->|"raw.githubusercontent<br/>CORS-open"| VIEW
+    DATA -->|"confirmed rooms"| ASSIST
     PAGE --> BM
     BM -->|"same-origin fetch"| API
     BM -->|"postMessage"| VIEW
     VIEW <--> LS
+    ASSIST <--> LS
     VIEW --> EXP
 
     style sim fill:#f7eeee,stroke:#b53225,color:#16181d
@@ -101,7 +104,9 @@ That last row is the important one. The table can only show rooms that are busy,
 | `scripts/lib/cdp.mjs` | CI, or locally | Dependency-free CDP client — launch, open, evaluate |
 | `.github/workflows/daily-schedule.yml` | GitHub Actions | 00:05 SGT cron; runs the fetch and commits the result |
 | `data/latest.json` | the repo | The published feed |
-| `index.html`, `assets/app.js` | Vercel → browser | Load the feed, import, persist, export, and hand off data |
+| `index.html`, `assets/assistant.js` | Vercel → browser | Ad-free Today/Week workspace, local class setup, backup and room suggestions |
+| `assets/assistant-data.js` | browser | ICAL parsing, profile validation, recurrence expansion and recommendation rules |
+| `rooms.html`, `assets/app.js` | Vercel → browser | Load the public feed, filter rooms, import/export snapshots, and receive scraper handoffs |
 | `assets/timetable.js` | browser | **All** Singapore-time filtering and rendering. Pure, no I/O |
 | `scripts/serve.mjs`, `scripts/test-handoff.mjs` | local dev | Static server; end-to-end handoff test |
 
@@ -141,6 +146,22 @@ room finder  fetch feed → coerce() → SIMTimetable.mount(rows, {rooms})
 `start_min` / `end_min` drive every comparison; the `"4:00 PM"` strings are display only.
 Booking status is **not** trusted from the payload — a status written at 00:05 would still claim
 `UPCOMING` at 3pm — so the renderer recomputes it in the `Asia/Singapore` time zone.
+
+## Personal assistant data
+
+`localStorage['sim-campus-assistant-profile-v1']` is an additive, versioned device-local profile.
+It stores only selected class occurrences, manually defined recurring classes, and the travel
+buffer/group-size preferences. The original ICS bytes and private calendar fields are discarded.
+
+The root page does not load AdSense. Public pages such as `/rooms`, `/about`, `/privacy`, and
+`/advanced` retain the existing advertising setup. Legacy `/#free-access`, `/#schedule`,
+`/?awaiting=1`, and `/viewer` URLs redirect to `/rooms` while preserving hash/query state and the
+popup opener relationship.
+
+Room recommendations are deliberately stricter than generic calendar gaps: a published Free
+Access window must cover the full interval from now (or the current class end) to the next class
+minus the user's travel buffer. Same-block rooms rank first; ordinary booking gaps and unallocated
+rooms never qualify.
 
 ## Deployment
 

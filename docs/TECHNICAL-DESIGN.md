@@ -237,7 +237,7 @@ lands on the first or second pump.
 
 **Acceptance rules on the viewer side.** A message is only acted on when all of these hold:
 
-1. the room finder was opened as `/?awaiting=1` **and** has a `window.opener`;
+1. the room finder was opened as `/rooms?awaiting=1` **and** has a `window.opener`;
 2. `e.source === window.opener` — the sender is the tab that opened it;
 3. `e.data.type === 'sim-timetable:payload'`;
 4. the payload survives `coerce()`, the same validation every other import goes through.
@@ -269,6 +269,45 @@ rooms is a worse failure than retyping one field.
 Because a restored payload can be old, the header states the age in words ("3 hours ago") and
 warns outright when the scrape is from a previous calendar day — schedules are per-day, so a
 stale one is not merely dated, it is wrong.
+
+## 6a. Device-local campus assistant
+
+`/` is the personal Today/Week workspace and does not load AdSense. `/rooms` owns the public
+Free Access finder, full timetable, JSON tools and scraper handoff. Legacy root hashes and the
+`/viewer` shim redirect to `/rooms` using `location.replace`, preserving the query string, hash,
+and popup opener relationship.
+
+The assistant profile uses `localStorage['sim-campus-assistant-profile-v1']`:
+
+```jsonc
+{
+  "version": 1,
+  "importedAt": "2026-09-10T01:00:00.000Z",
+  "icsName": "calendar.ics",
+  "importedClasses": [/* normalized ClassOccurrence */],
+  "manualClasses": [/* recurring manual series */],
+  "preferences": { "travelBufferMinutes": 15, "groupSize": null }
+}
+```
+
+The original ICS source, descriptions, attendees, organisers, URLs and alarms are discarded.
+Profile saves validate into a fresh object before replacing the last good local value. Importing
+a new ICS file replaces only `importedClasses`; manual series survive.
+
+The vendored ICAL.js 2.2.1 module parses VEVENT recurrence, RDATE, EXDATE and recurrence
+exceptions. The importer registers a fixed Asia/Singapore timezone plus any VTIMEZONE components
+embedded in the file. UTC, floating time, Asia/Singapore, and embedded zones are supported;
+events using an unknown external timezone are skipped with a visible warning. Timed occurrences
+are expanded from 30 days before import to 366 days after it. All-day and cancelled events are
+ignored, and duplicate masters with the same UID keep the highest SEQUENCE.
+
+`recommendRooms(payload, todayModel, preferences, now)` returns a state and up to three rooms.
+For a current campus snapshot, a row qualifies only when its event contains `Free Access` and its
+published window covers the interval from now (or the current class end) to the next class minus
+the travel buffer. Without a later class, the required window is 60 minutes. Missing or stale
+data suppresses recommendations. Same-block rooms rank first, followed by closest known capacity
+fit, remaining open duration, and room name. Ordinary gaps and zero-activity rooms never enter
+the candidate set.
 
 ## 6b. The daily job
 

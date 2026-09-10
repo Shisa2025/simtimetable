@@ -1,4 +1,4 @@
-/* SIM Timetable — dependency-free parsing and time-first room finding.
+/* SIM Campus Assistant — public room parsing and time-first room finding.
  *
  * Used by the live site and inlined into standalone exports. Keep this file
  * browser-native so an exported timetable works without a network connection.

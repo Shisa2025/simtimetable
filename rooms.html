@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en-SG">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>(function(){try{var t=localStorage.getItem('sim-timetable-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3855542710250858" crossorigin="anonymous"></script>
+<title>SIM Campus Assistant — Find Free Access Rooms</title>
+<meta name="description" content="Choose a time and find SIM campus rooms marked Free Access." />
+<meta name="theme-color" content="#132019" />
+<link rel="canonical" href="https://simtimetable.vercel.app/rooms" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="SIM Campus Assistant" />
+<meta property="og:description" content="Choose a time. Find a Free Access room." />
+<meta property="og:url" content="https://simtimetable.vercel.app/rooms" />
+<meta property="og:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
+<meta property="og:image:width" content="1734" />
+<meta property="og:image:height" content="907" />
+<meta property="og:image:alt" content="SIM Timetable — Find a Free Access room." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="SIM Campus Assistant" />
+<meta name="twitter:description" content="Choose a time. Find a Free Access room." />
+<meta name="twitter:image" content="https://simtimetable.vercel.app/assets/og-sim-campus-timetable.png" />
+<link rel="stylesheet" href="/assets/styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%23132019%22/><path d=%22M18 67h64M28 49h44M39 31h22%22 stroke=%22%236CDEA5%22 stroke-width=%2210%22 stroke-linecap=%22round%22/></svg>" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to room finder</a>
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/" aria-label="SIM Campus Assistant home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-copy">
+        <strong>SIM Campus Assistant</strong>
+        <small>Independent student tool</small>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="/">Today</a>
+      <a href="/#week">Week</a>
+      <a href="/rooms#free-access" data-view-link="now">Find a room</a>
+      <a href="/about">About</a>
+    </nav>
+    <button class="theme-toggle" data-theme-toggle type="button" aria-label="System theme. Activate to change theme.">
+      <span class="theme-toggle-icon" aria-hidden="true">?</span>
+    </button>
+  </div>
+</header>
+
+<main class="page-shell app-shell" id="main">
+  <section class="workspace-intro" aria-labelledby="pageTitle">
+    <div>
+      <p class="eyebrow">SIM campus · Singapore</p>
+      <h1 id="pageTitle">Find a Free Access room.</h1>
+      <p>Pick a time, then narrow it down.</p>
+    </div>
+    <div class="workspace-meta" id="workspaceMeta" hidden>
+      <div class="data-stamp">
+        <span>Schedule</span>
+        <strong id="dateValue">—</strong>
+        <small id="dateDetail">Loading…</small>
+      </div>
+      <div class="data-stamp">
+        <span>Updated</span>
+        <strong id="updatedValue">—</strong>
+        <small id="updatedDetail">Checking…</small>
+      </div>
+      <details class="data-menu">
+        <summary>Data</summary>
+        <div class="data-menu-panel">
+          <button type="button" id="exportBtn">Download offline copy</button>
+          <button type="button" id="showImportBtn">Load my own data</button>
+          <a href="/advanced">Advanced refresh tools</a>
+          <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
+          <span class="action-status" id="exportStatus" role="status"></span>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <aside class="alert" id="staleBanner" role="alert" hidden>
+    <span aria-hidden="true">?</span>
+    <div><strong>Previous schedule</strong><p id="staleText">This snapshot is not for today in Singapore.</p></div>
+  </aside>
+
+  <section class="waiting-panel card" id="waitingPanel" aria-live="polite" hidden>
+    <div class="loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <div><h2 id="waitStep">Waiting for the fresh schedule</h2><p id="waitDetail">Keep this tab open while the SIM scheduling page sends the data.</p></div>
+      <button class="btn" id="waitingCancel" type="button">Load a file instead</button>
+    </div>
+  </section>
+
+  <section class="card" id="loadingPanel" aria-live="polite">
+    <div class="loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <div><h2>Getting today’s timetable</h2><p>Checking the latest published SIM schedule.</p></div>
+    </div>
+  </section>
+
+  <section class="import-panel card" id="importPanel" aria-labelledby="importHeading" hidden>
+    <p class="eyebrow">Fallback option</p>
+    <h2 id="importHeading">Load a saved schedule</h2>
+    <p class="note">Use this only when the daily snapshot is unavailable. Your file stays in this browser.</p>
+    <div class="drop" id="drop">
+      <strong>Drop sim-timetable.json here</strong><br />
+      <span class="note">or <button class="btn" id="pickBtn" type="button">Choose a file</button></span>
+      <input type="file" id="file" accept="application/json,.json" hidden />
+    </div>
+    <label for="pasteArea" class="note">Or paste schedule JSON:</label>
+    <textarea class="paste" id="pasteArea" placeholder="Paste JSON here"></textarea>
+    <div class="row">
+      <button class="btn primary" id="loadPasteBtn" type="button">Load schedule</button>
+      <button class="btn" id="cancelImportBtn" type="button">Cancel</button>
+      <span class="err" id="importError" role="alert"></span>
+    </div>
+  </section>
+
+  <section id="app" hidden>
+    <div id="timetable"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <p><strong>Independent student tool.</strong> Not affiliated with or endorsed by Singapore Institute of Management. Schedule data comes from SIM’s public scheduling service.</p>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="/">Today</a>
+      <a href="https://scheduling.sim.edu.sg/rad/campus.htm?id=SIM">Official schedule</a>
+      <a href="/about">About</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/advanced">Advanced tools</a>
+      <a href="https://github.com/Shisa2025/simtimetable/issues">Feedback</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/assets/toast.js"></script>
+<script src="/assets/timetable.js"></script>
+<script src="/assets/site.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

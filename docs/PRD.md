@@ -1,6 +1,6 @@
 # PRD — SIM Campus Timetable
 
-**Status:** shipped (v1) · **Last updated:** 2026-08-23
+**Status:** shipped (v2) · **Last updated:** 2026-09-10
 **Live:** https://simtimetable.vercel.app · **Repo:** https://github.com/Shisa2025/simtimetable
 
 ---
@@ -33,8 +33,8 @@ URL; nothing else is required of them.
 standalone HTML export, which is a single file that can be sent to someone who will never run
 the scraper.
 
-There is no account system and no login — the underlying schedule is public — so there is
-nothing to sign up for and nothing personal involved.
+There is no account system and no login. Students may optionally save selected class names,
+times, and locations on their own device; that personal profile is never uploaded by the app.
 
 ## 3. Goals
 
@@ -46,11 +46,16 @@ nothing to sign up for and nothing personal involved.
 | G4 | Require nothing of the reader | Daily CI refresh; the site is already current when opened |
 | G5 | Cost nothing to run and not rot | Zero dependencies, zero build step, static hosting |
 | G6 | Outlive the site itself | Standalone HTML export works offline, forever |
+| G7 | Answer “what is next?” at a glance | Today shows the current and next personal class |
+| G8 | Turn a class gap into a safe recommendation | Only confirmed Free Access windows covering the full gap qualify |
+| G9 | Keep personal planning private | ICS parsing, manual classes, preferences and backups stay on-device |
 
 ## 4. Non-goals
 
 - **Booking rooms.** Read-only. This never writes to any SIM system.
 - **Accounts, sync, or sharing.** No server means no shared state. Sharing is a file you send.
+- **Assignments, exams, and general task management.** The first assistant release selects only class events.
+- **Background notifications or exact indoor routing.** The dashboard works while open and gives block/level context only.
 - **Credentialed access of any kind.** Nothing here logs in, stores a password, or touches a
   personal timetable. It reads only what SIM publishes openly.
 - **Live data.** Even with the nightly job (§4a) the JSON is a snapshot, not a live feed. The
@@ -95,6 +100,18 @@ bookmarklet has to run *on* the scheduling page.
 > and that a server "cannot reach the page at all". That was wrong — no login is required. The
 > browser-side scraper, the credential concerns and the laptop-scheduled job all existed to solve
 > a problem that turned out not to exist.
+
+## 5a. Local-first campus assistant
+
+The root route is an ad-free working surface with Today and Week views. A student can import an
+ICS file, select the event series that are classes, or define a repeating class manually. Only
+the normalized class name, occurrence time, location and matched SIM room metadata are retained.
+
+The public Free Access finder now lives at `/rooms`. The Today view combines both data sets only
+inside the browser. It recommends at most three rooms whose explicit Free Access window covers the
+whole study interval, including a configurable travel buffer before the next class. When the
+public snapshot is stale or incomplete, the assistant suppresses the recommendation instead of
+making an optimistic claim.
 
 ## 6. User stories
 
@@ -144,7 +161,7 @@ bookmarklet has to run *on* the scheduling page.
   clipboard copy if the viewer tab cannot be opened or never acknowledges.
 - **FR7** Sends the data nowhere except the reader's own viewer tab.
 
-### Student room finder (`index.html`)
+### Student room finder (`rooms.html`)
 
 - **FR8** Imports JSON by file drop, file picker, clipboard read, or paste-into-textarea.
   Multiple routes because browsers block some of them depending on context.
@@ -203,12 +220,14 @@ rooms are reported as a count with a one-line explanation, never as a list of de
 
 | Criterion | Target | Status |
 | --- | --- | --- |
-| Time to answer "what can I use now?" | < 10s from opening the site | ✅ direct root view |
+| Time to answer "what can I use now?" | < 10s from opening the finder | ✅ direct `/rooms` view |
 | Scrape coverage | 100% of rows, or an explicit warning | ✅ verified against site total |
 | Data leaving the browser | zero bytes | ✅ static host, no backend |
 | Runtime dependencies | zero | ✅ no npm packages, no CDN |
 | Build step | none | ✅ deploys as static files |
 | Standalone export works offline | yes | ✅ verified in an isolated iframe |
+| Personal timetable network uploads | zero | ✅ root workspace is local-only and ad-free |
+| Legacy room-finder links and scraper handoff | preserved | ✅ redirected to `/rooms` with state intact |
 
 ## 9. Known limitations
 
@@ -224,9 +243,8 @@ rooms are reported as a count with a one-line explanation, never as a list of de
 
 Ordered by value, and each checked against §5 (must not require a server):
 
-1. **Now/next indicator** — highlight what's free *at this moment*, using the client clock.
-2. **Shareable URL** — filter state (not data) in the hash, so a link opens a preset view.
-3. **Diff two scrapes** — "what changed since this morning".
-4. **Multi-day support** — currently the schedule is treated as a single day; `start_min` would
+1. **Shareable room-filter URL** — filter state (not personal data) in the hash.
+2. **Diff two scrapes** — "what changed since this morning".
+3. **Multi-day campus-room support** — the public room snapshot is still treated as a single day; `start_min` would
    need a date component. This is the largest real gap.
-5. **Capacity / room-type metadata**, if the source page ever exposes it.
+4. **Optional task layer** — assignments and exams, only after a separate privacy and data-source decision.

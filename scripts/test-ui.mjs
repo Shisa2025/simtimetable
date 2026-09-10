@@ -12,7 +12,7 @@ function check(name, pass, detail) {
 }
 
 await withBrowser(async browser => {
-  const { targetId, sessionId } = await browser.open(BASE + '/');
+  const { targetId, sessionId } = await browser.open(BASE + '/rooms');
   await sleep(900);
   await browser.evaluate(`(async () => {
     const payload = await (await fetch('/sample/sim-timetable.sample.json')).json();
@@ -57,12 +57,13 @@ await withBrowser(async browser => {
         return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length;
       };
       const targets = [...document.querySelectorAll('button, input, select, summary, .btn, .site-nav a')]
-        .filter(visible).map(node => Math.round(node.getBoundingClientRect().height));
+        .filter(visible).map(node => ({ height: Math.round(node.getBoundingClientRect().height), label: (node.textContent || node.getAttribute('aria-label') || node.tagName).trim().slice(0, 32) }));
       const grid = document.querySelector('.availability-grid');
       return JSON.stringify({
         width: innerWidth,
         overflow: document.documentElement.scrollWidth - innerWidth,
-        minTarget: targets.length ? Math.min(...targets) : 0,
+        minTarget: targets.length ? Math.min(...targets.map(target => target.height)) : 0,
+        shortTargets: targets.filter(target => target.height < 44),
         gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 0,
         hasLens: !!document.querySelector('.time-lens'),
       });
@@ -77,7 +78,7 @@ await withBrowser(async browser => {
   check('390px layout has no horizontal page overflow', responsive.mobile.overflow <= 0, String(responsive.mobile.overflow));
   check('768px layout has no horizontal page overflow', responsive.tablet.overflow <= 0, String(responsive.tablet.overflow));
   check('1440px layout has no horizontal page overflow', responsive.desktop.overflow <= 0, String(responsive.desktop.overflow));
-  check('mobile controls meet the 44px touch target', responsive.mobile.minTarget >= 44, String(responsive.mobile.minTarget));
+  check('mobile controls meet the 44px touch target', responsive.mobile.minTarget >= 44, JSON.stringify(responsive.mobile.shortTargets));
   check('mobile Free Access results use one column', responsive.mobile.gridColumns === 1, String(responsive.mobile.gridColumns));
   check('desktop Free Access results use two columns', responsive.desktop.gridColumns === 2, String(responsive.desktop.gridColumns));
   check('the time lens renders at every viewport', responsive.mobile.hasLens && responsive.tablet.hasLens && responsive.desktop.hasLens);

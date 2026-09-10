@@ -86,7 +86,7 @@ const OPENER_SCRIPT = `(async () => {
     }
   });
 
-  const win = window.open(VIEWER_ORIGIN + '/?awaiting=1', 'simTimetableViewer');
+  const win = window.open(VIEWER_ORIGIN + '/rooms?awaiting=1', 'simTimetableViewer');
   if (!win) return JSON.stringify({ fatal: 'popup blocked' });
 
   let pumps = 0;
@@ -125,7 +125,7 @@ const OPENER_SCRIPT = `(async () => {
 // to inject data into it.
 const SPOOF_SCRIPT = `(async () => {
   const O = window.location.origin;
-  const win = window.__t = window.open(O + '/?awaiting=1', 'spoofTarget');
+  const win = window.__t = window.open(O + '/rooms?awaiting=1', 'spoofTarget');
   if (!win) return JSON.stringify({ fatal: 'popup blocked' });
   await new Promise(r => setTimeout(r, 900));
 
@@ -219,7 +219,7 @@ try {
   console.log('\n--- compatibility: old /viewer route preserves handoff state ---');
   const c = await evalInNewTab(cdp, BASE + '/', COMPAT_SCRIPT);
   if (c.fatal) throw new Error(c.fatal);
-  check('old viewer route redirects to the root app', c.pathname === '/', c.pathname);
+  check('old viewer route redirects to the room finder', c.pathname === '/rooms', c.pathname);
   check('old viewer route preserves the awaiting query', c.search.includes('awaiting=1'), c.search);
   check('old viewer route preserves the opener relationship', c.openerPreserved === true);
   check('redirected app enters the waiting state', c.waiting === true);
